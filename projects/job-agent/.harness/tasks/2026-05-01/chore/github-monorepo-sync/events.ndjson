@@ -1,4 +1,5 @@
 {"ts":"2026-05-01","event":"task_created","summary":"创建 GitHub monorepo 同步任务"}
 {"ts":"2026-05-01","event":"implementation_completed","summary":"完成公开 demo 兜底、敏感测试数据替换、作品集 PDF 更新和 monorepo 临时同步"}
 {"ts":"2026-05-01","event":"validation_passed","summary":"源项目与临时 monorepo 副本测试、评测、编译和公开 demo 均通过"}
-{"ts":"2026-05-01","event":"remote_push_completed","summary":"已 push 到 git@github.com:Baixl11/creative-project.git，远端 main 指向 27bb648"}
+{"ts":"2026-05-01","event":"remote_push_completed","summary":"已 push 到 git@github.com:Baixl11/creative-project.git，主体同步提交为 27bb648"}
+{"ts":"2026-05-01","event":"completion_record_pushed","summary":"已追加任务收尾提交 332ff04；最终远端指针以最新 git ls-remote 为准"}

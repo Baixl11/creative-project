@@ -8,6 +8,6 @@
 
 已完成：本地项目公开化清理、公开中文 demo 兜底、作品集 PDF 更新、临时 monorepo 同步、验证、提交和 push。
 
-远端结果：`main` 已推送到 `27bb648 Add Job Agent portfolio project`。
+远端结果：已 push 到 `git@github.com:Baixl11/creative-project.git`。主体同步提交是 `27bb648 Add Job Agent portfolio project`，任务收尾记录提交是 `332ff04 Record Job Agent sync completion`。
 
 下一步：用户打开 GitHub 页面确认目录结构和作品集 PDF 展示是否符合预期。

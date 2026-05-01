@@ -21,6 +21,7 @@
 
 ## GitHub 结果
 
-- 已提交：`27bb648 Add Job Agent portfolio project`。
+- 主体同步提交：`27bb648 Add Job Agent portfolio project`。
+- 任务收尾提交：`332ff04 Record Job Agent sync completion`。
 - 已推送：`main -> git@github.com:Baixl11/creative-project.git`。
-- 已确认：远端 `refs/heads/main` 指向 `27bb648c0151fdf3d68a9ee611e3c0e0168470a7`。
+- 已确认：远端 `refs/heads/main` 可访问，且包含本次同步提交链。
