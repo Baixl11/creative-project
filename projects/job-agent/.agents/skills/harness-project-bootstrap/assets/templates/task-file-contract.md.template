@@ -1,0 +1,299 @@
+# Task File Contract
+
+## 任务键
+
+- 先按 `task-routing.md` 路由请求，再决定续跑还是新建。
+- 优先复用已有任务，只在明确是新需求或超出原验收边界时创建新任务。
+- 新任务应先检查 `.harness/current-task.json`、`.harness/tasks/index.json` 和 `.harness/tasks/` 避免冲突。
+- 默认使用 `<YYYY-MM-DD>/<type>/<short-slug>`，其中日期用于归档，`type/short-slug` 与分支 `harness/<type>/<short-slug>` 对齐。
+- `type` 取 `feature`、`fix`、`refactor`、`docs`、`test`、`chore`、`security` 中最贴近任务性质的一项。
+- `short-slug` 使用 2-6 个英文短词描述内容，不包含日期或 task id。
+- 由 Codex 当前会话直接创建文件，不依赖初始化脚本。
+
+## 全局路由文件
+
+```text
+.harness/
+├── current-task.json
+└── tasks/
+    └── index.json
+```
+
+- `current-task.json` 指向当前活跃或最近任务，服务“继续上一个任务”。
+- `tasks/index.json` 记录所有任务摘要，服务标题、slug、状态和关键词匹配。
+- 创建、续跑、状态变化、进入人工验收、验收通过或取消时必须同步这两个文件。
+
+## 必需目录
+
+```text
+.harness/tasks/<YYYY-MM-DD>/<type>/<short-slug>/
+├── input/requirement.md
+├── task-package.yaml
+├── problem-decomposition.md
+├── research-notes.md（触发调研时）
+├── functional-test-plan.md（需要功能点/核心流程验证时）
+├── runtime-test-plan.md（需要运行时/交互验证时）
+├── interaction-test-plan.yaml（需要前端/Electron 交互验证时）
+├── acceptance-criteria.md
+├── exec-plan.md
+├── decision-log.md
+├── handoff.md
+├── verification-report.md
+├── doc-sync-report.md
+├── trace.md
+├── summary.md
+├── state.json
+├── events.ndjson
+├── agents.json
+├── artifacts.json
+└── validations.json
+```
+
+## 视觉任务增量目录
+
+当需求包含截图、设计图、Figma、一比一复刻、页面实现或视觉还原时，额外创建：
+
+```text
+.harness/tasks/<YYYY-MM-DD>/<type>/<short-slug>/
+├── visual-spec.md
+├── visual-checklist.md
+├── visual-review.md
+├── visual-defects.md
+└── snapshots/
+```
+
+参考图如果可落盘，放在 `input/reference.png`、`input/reference.jpg` 或 `input/reference.webp`；如果只存在于当前对话，则在 `input/reference.md` 记录图片编号、尺寸、关键区域和限制。
+
+## `task-package.yaml`
+
+至少包含：
+
+```yaml
+task_key: "2026-04-24/feature/short-title"
+parent_task: null
+related_tasks: []
+route_reason: "new_request"
+branch: "harness/feature/short-title"
+created_at: "2026-04-24"
+title: "一句话标题"
+status: "planned"
+goal: "本任务要达成的用户可见结果"
+context: "需求背景、输入来源和当前项目状态"
+constraints:
+  - "遵守 AGENTS.md 与 ARCHITECTURE.md"
+done_when:
+  - "用户需求中的可验收结果已经实现"
+  - "problem-decomposition.md 已完成问题定义、方案选择和工作拆分"
+  - "如果需求、问题或方案不明确，research-notes.md 已记录本地证据、外部资料、候选方案和项目适配结论"
+  - "如果涉及功能行为或核心流程，functional-test-plan.md 已定义并执行，且 blocking/high 风险功能点已通过"
+  - "如果涉及运行时或交互行为，runtime-test-plan.md 已定义并执行，或工具缺失时已由用户确认替代验证方式"
+  - "如果涉及前端或 Electron 交互，interaction-test-plan.yaml 已定义并通过 MCP Playwright 或项目 Playwright 执行，或用户已确认替代验证方式"
+  - "acceptance-criteria.md 已拆分机器验证、行为验证和人工验收边界"
+  - "如果是截图/视觉任务，已完成参考图与实际截图的区域级对比、自修复复验，visual-defects.md 中没有 open 状态的 blocking 或 major 缺陷"
+read_first:
+  - "AGENTS.md"
+  - "ARCHITECTURE.md"
+  - ".harness/project-profile.yaml"
+  - ".harness/environment.yaml"
+  - ".harness/workspace-map.yaml"
+  - ".agents/skills/{{REQUEST_SKILL_NAME}}/references/task-routing.md"
+  - ".agents/skills/{{REQUEST_SKILL_NAME}}/references/problem-decomposition.md"
+  - ".agents/skills/{{REQUEST_SKILL_NAME}}/references/research-protocol.md"
+  - ".agents/skills/{{REQUEST_SKILL_NAME}}/references/uncertainty-gates.md"
+  - ".agents/skills/{{REQUEST_SKILL_NAME}}/references/functional-verification.md"
+  - ".agents/skills/{{REQUEST_SKILL_NAME}}/references/runtime-verification.md"
+  - ".agents/skills/{{REQUEST_SKILL_NAME}}/references/interaction-verification.md"
+  - ".agents/skills/{{REQUEST_SKILL_NAME}}/references/task-observability.md"
+  - ".agents/skills/{{REQUEST_SKILL_NAME}}/references/visual-task-profile.md（仅截图/视觉任务）"
+verification_commands:
+{{VERIFICATION_COMMANDS_YAML}}
+git_strategy:
+  branch: "harness/feature/short-title"
+  create_or_switch_before_coding: true
+  affiliated_subrepo_branch_policy: "无 .harness 的附属子仓库使用同名任务分支"
+  commit_policy: "模块闭环、风险边界或约 300-500 行变更量时提交"
+  push_policy: "不自动 push"
+related_project_edit_scope:
+  - path: "../shared-lib"
+    harness_status: "absent"
+    write_policy: "allowed_by_default"
+    branch: "harness/feature/short-title"
+  - path: "../independent-app"
+    harness_status: "present"
+    write_policy: "ask_before_write"
+assumptions:
+  - "待确认：无额外业务约束"
+```
+
+不要写仓库里不存在的路径或命令。
+
+## `problem-decomposition.md`
+
+必须包含：
+
+- 用户目标。
+- 当前状态。
+- 期望状态。
+- 非目标。
+- 硬约束。
+- 不确定点。
+- 问题分类。
+- 已读取证据。
+- 方案选项。
+- 首选方案。
+- 工作包拆分。
+- 风险和回滚或降级策略。
+
+## `research-notes.md`
+
+当需求、问题、根因、方案、环境、依赖行为或验收标准不明确时必须生成，且至少包含：
+
+- 调研触发原因。
+- 本地证据和已确认事实。
+- 外部资料来源、适用范围和时效性风险。
+- 候选方案、项目适配性、风险和验证方式。
+- 最终选择方案及放弃其他方案的理由。
+- 仍需用户确认的问题。
+
+## `acceptance-criteria.md`
+
+必须拆成：
+
+- 机器验证：命令、脚本、测试、构建、类型检查。
+- 行为验证：用户可见结果、交互路径、边界条件、错误处理。
+- 人工验收：产品判断、视觉判断、业务语义、需要用户确认的取舍。
+
+每条验收项都必须可判断，避免“尽量”“优化”“接近”这类无阈值表述。
+
+## `functional-test-plan.md`
+
+当任务涉及代码行为、核心流程、状态计算、数据转换、API、IPC、表单逻辑、列表筛选、文件读写、模型调用或跨项目联调时必须生成，且至少包含：
+
+- 功能点拆分：每个功能点的风险等级、首选测试方式、测试数据和通过标准。
+- 核心流程测试：主要成功路径、关键失败路径和边界输入。
+- 测试实现策略：优先项目原生单元测试、组件测试、服务测试或已有测试框架；允许任务内临时小脚本，但必须写明路径、输入、输出和是否保留。
+- 高层验证前置条件：blocking/high 风险功能点全部通过后，才能继续 runtime、interaction、visual 或人工验收。
+
+临时小脚本不能成为长期隐性依赖。若需要保留，必须转成项目认可的测试脚本或在 `decision-log.md` 记录保留理由。
+
+## `runtime-test-plan.md`
+
+当任务涉及用户可见行为、Electron、API、IPC、数据库、模型调用、文件系统、跨项目联调或交互流程时必须生成，且至少包含：
+
+- 触发原因：为什么 build/typecheck/lint 不足以证明正确。
+- 验证工具：MCP Playwright、Playwright、项目原生 E2E、项目测试脚本、API smoke test 或用户确认的替代方式。
+- 验证环境：启动命令、入口地址、Electron 窗口、测试数据、账号、外部服务和副作用边界。
+- 交互路径：每条路径的操作步骤、预期可观察结果和记录位置。
+- 工具缺失处理：缺少 MCP Playwright、Playwright、测试数据或启动方式时，记录向用户确认的问题和最终选择。
+- 残余风险：无法自动验证的行为和需要人工验收的边界。
+
+Electron UI 或交互任务默认使用 MCP Playwright 或 Playwright。没有工具或测试方式不明确时，必须进入 `needs_clarification`，不得把 build 通过写成行为验证通过。
+
+## `interaction-test-plan.yaml`
+
+当任务涉及前端、Electron、页面、表单、按钮、菜单、弹窗、导航、截图复刻或用户可见交互时必须生成，且至少包含：
+
+- `source`：引用 `.harness/environment.yaml`、`acceptance-criteria.md` 和 `runtime-test-plan.md`。
+- `tool`：首选 MCP Playwright 或项目 Playwright，记录可用性证据和替代策略。
+- `entry`：启动命令、工作目录、URL、Electron 窗口或调试入口。
+- `viewport`：目标宽高、deviceScaleFactor、zoomFactor 和必要缩放/窄屏视口。
+- `scenarios`：每个场景的步骤、目标元素、输入、预期可观察结果和证据路径。
+- `evidence`：snapshot、screenshot、console、network 和日志位置。
+
+示例：
+
+```yaml
+schema_version: "1.0"
+tool:
+  preferred: "mcp_playwright"
+  availability: "confirmed"
+entry:
+  kind: "web"
+  command: "pnpm dev"
+  url: "http://localhost:5173"
+  working_dir: "."
+viewport:
+  width: 2048
+  height: 1152
+  device_scale_factor: 1
+  zoom_factor: 1
+scenarios:
+  - name: "核心路径"
+    steps:
+      - action: "navigate"
+        target: "http://localhost:5173"
+        expected: "页面加载完成"
+      - action: "snapshot"
+        target: "body"
+        expected: "目标控件可识别"
+      - action: "click"
+        target: "开始按钮"
+        expected: "状态发生变化"
+    expected:
+      - "无阻塞级 console error"
+      - "无阻塞级 network failure"
+    evidence:
+      snapshot: "snapshots/core.snapshot.md"
+      screenshot: "snapshots/core.png"
+      console: "logs/core-console.json"
+      network: "logs/core-network.json"
+```
+
+## 问题拆解状态规则
+
+- 没有 `problem-decomposition.md` 和 `acceptance-criteria.md`，任务不得进入 `coding`。
+- 触发调研时，没有 `research-notes.md` 或方案未说明项目适配性，任务不得进入 `coding`。
+- 关键问题未澄清时，状态应为 `needs_clarification`。
+- 方案未选择时，状态应为 `blocked_on_decision`。
+- `exec-plan.md` 必须从问题拆解派生；如果两者冲突，先更新问题拆解并记录 `decision-log.md`。
+
+## 运行时验证状态规则
+
+- 触发 `functional-verification.md` 的任务，没有 `functional-test-plan.md` 时不得进入 `needs_verification` 之后的状态。
+- `validations.json.functional_checks` 中存在 failed 的 blocking/high 风险项时，不得继续把 runtime、interaction 或 visual 验证写成通过。
+- 功能点和核心流程验证通过后，才允许进入 `runtime-test-plan.md`、`interaction-test-plan.yaml` 或 MCP Playwright 验证。
+- 触发 `runtime-verification.md` 的任务，没有 `runtime-test-plan.md` 时不得进入 `needs_verification` 之后的状态。
+- 触发 `interaction-verification.md` 的前端或 Electron 任务，没有 `interaction-test-plan.yaml` 时不得进入 `needs_verification` 之后的状态。
+- 运行时或交互验证未执行、失败或缺少用户确认的替代方式时，状态不得进入 `ready_for_human_review`。
+- 工具缺失、启动方式不明、测试数据不明或 MCP Playwright/Playwright 不可用时，状态应为 `needs_clarification`。
+- 用户确认只做静态验证或人工验证时，必须在 `decision-log.md`、`verification-report.md`、`validations.json` 和 `summary.md` 记录残余风险。
+- build/typecheck/lint 只能写入机器验证，不得替代行为验证。
+- MCP Playwright 只截图、不执行交互、不检查 console/network 或不保存证据时，交互验证不得写成 `passed`。
+
+## 不确定性闸门状态规则
+
+- 初始化分析、需求分析、问题拆解、环境配置、验证命令、数据/安全/git、视觉验收等重要流程存在关键未知项时，必须遵循 `uncertainty-gates.md`。
+- 触发闸门时，状态必须为 `needs_clarification` 或 `blocked_on_decision`，并在 `state.json.blockers`、`summary.md`、`handoff.md` 记录阻塞点。
+- 触发闸门时，必须向 `events.ndjson` 追加 `clarification_requested` 事件。
+- 用户确认后，必须向 `decision-log.md` 记录答案和影响范围，再把状态恢复到后续可执行阶段。
+- 未解决的关键未知项不得作为 `assumptions` 继续执行。
+
+## 机器可观测状态规则
+
+- `state.json` 是前端和工具读取当前状态的主入口，必须遵循 `task-observability.md`。
+- `events.ndjson` 是追加式事件流，每个阶段开始、完成、失败、阻塞、验证和提交都要追加公开事件。
+- `agents.json` 记录 planner、coder、verifier、doc_gardener 的公开状态；即使串行执行，也必须按角色更新。
+- `artifacts.json` 记录任务产物是否存在、待补充或不适用，前端不得只靠 Markdown 猜测。
+- `validations.json` 记录机器验证命令、运行时检查、交互检查、人工验收边界和结果摘要。
+- `validations.json.functional_checks` 必须记录功能点、风险等级、测试方式、命令或脚本、覆盖项、状态、失败原因和结果摘要。
+- `validations.json.interaction_checks` 必须记录工具、入口、步骤、预期结果、实际结果、截图、console_errors、network_failures 和失败原因。
+- `summary.md` 保持短摘要，供前端详情页和下一个 Codex 会话快速读取。
+- 不要把 Codex 内部推理写入任何观测文件，只记录公开事实、决策、命令、结果和阻塞项。
+
+## 任务路由状态规则
+
+- 续跑任务不得创建新任务目录，必须复用原任务目录并追加反馈。
+- 新任务如果来自旧任务扩展，必须填写 `parent_task`、`related_tasks` 和 `route_reason`。
+- `state.json.task_key`、`task-package.yaml.task_key`、`.harness/current-task.json.task_key` 与 `.harness/tasks/index.json` 中对应项必须一致。
+- 如果路由候选不唯一，状态应为 `needs_clarification`，并只问一个确认问题。
+- `accepted` 和 `cancelled` 任务不作为“继续上一个任务”的默认目标，除非用户明确指定。
+
+## 视觉任务状态规则
+
+- `verified` 只代表机器检查和截图流程已完成，不代表视觉验收通过。
+- 如果缺少截图环境，状态不得超过 `needs_visual_verification`，并在 `handoff.md` 写明阻塞原因。
+- 截图任务必须完成参考图与实际截图的区域级对比；只保存截图不写差异分析时，状态不得超过 `needs_visual_verification`。
+- 视觉任务必须记录目标视口、缩放/窄屏退化视口、Electron 窗口尺寸、deviceScaleFactor、zoomFactor 和系统缩放假设。
+- 修复前截图、修复后截图和最终截图必须在 `snapshots/` 中有记录；如果没有修复轮次，必须在 `visual-review.md` 说明初始截图无 blocking/major 缺陷。
+- 如果存在 open 状态的 `blocking` 或 `major` 视觉缺陷，状态不得进入 `ready_for_human_review`。
+- 修复 open 状态的 `blocking` 或 `major` 缺陷后，必须复验并更新 `visual-review.md`、`visual-defects.md`、`validations.json` 和 `events.ndjson`。

@@ -1,0 +1,10 @@
+{
+  "schema_version": "1.0",
+  "agents": [
+    {"name": "planner", "status": "done"},
+    {"name": "coder", "status": "pending"},
+    {"name": "verifier", "status": "pending"},
+    {"name": "doc_gardener", "status": "pending"}
+  ]
+}
+

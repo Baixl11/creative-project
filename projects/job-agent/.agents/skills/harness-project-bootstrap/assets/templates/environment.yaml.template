@@ -1,0 +1,30 @@
+schema_version: "1.0"
+
+project:
+  name: "{{PROJECT_NAME}}"
+  kind: "{{PROJECT_KIND}}"
+
+source:
+  generated_from: ".harness/bootstrap-plan.yaml"
+  workspace_map: ".harness/workspace-map.yaml"
+  project_profile: ".harness/project-profile.yaml"
+
+runtime:
+{{ENV_RUNTIME_YAML}}
+
+commands:
+{{ENV_COMMANDS_YAML}}
+
+frontend:
+{{FRONTEND_ENVIRONMENT_YAML}}
+
+mcp_playwright:
+{{MCP_PLAYWRIGHT_YAML}}
+
+unresolved:
+{{ENVIRONMENT_UNRESOLVED_YAML}}
+
+rules:
+  unknown_policy: "运行、调试、入口 URL、Electron 启动方式、测试数据或 MCP Playwright 可用性无法确认时，任务必须进入 needs_clarification。"
+  frontend_behavior_gate: "前端、Electron 或用户可见行为变更必须有 runtime-test-plan.md 和 interaction-test-plan.yaml，不能只以 build/typecheck/lint 作为完成依据。"
+  evidence_policy: "MCP Playwright 验证必须记录 snapshot、console、network、screenshot 和 validations.json.interaction_checks。"

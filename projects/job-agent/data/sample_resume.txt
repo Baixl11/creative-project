@@ -1,0 +1,8 @@
+Alex Chen
+Product Manager
+
+- Led roadmap planning for a mobile productivity product used by 200k monthly active users.
+- Worked with designers, engineers, and analysts to launch onboarding experiments that improved activation by 12%.
+- Built weekly KPI dashboards and partnered with data teammates to track retention and funnel conversion.
+- Wrote PRDs, aligned stakeholders, and ran sprint planning for cross-functional teams.
+- Explored AI note summarization features and coordinated early user testing with support and research teams.

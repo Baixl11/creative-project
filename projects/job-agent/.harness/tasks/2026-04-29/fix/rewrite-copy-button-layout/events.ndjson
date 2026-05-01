@@ -1,0 +1,5 @@
+{"ts":"2026-04-29","event":"task_created","summary":"创建复制按钮布局修复任务"}
+{"ts":"2026-04-29","event":"evidence_collected","summary":"确认 st.code 内置复制按钮会覆盖建议写法文本区域"}
+{"ts":"2026-04-29","event":"implementation_completed","summary":"用自定义可复制文本块替换 st.code，复制 icon 位于文本框外侧"}
+{"ts":"2026-04-29","event":"validation_passed","summary":"Web 单测、全量 unittest、py_compile、评测集和真实样本 CLI 通过"}
+{"ts":"2026-04-29","event":"runtime_validation_blocked","summary":"Streamlit 启动健康检查因本地端口授权超时未执行"}

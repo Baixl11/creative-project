@@ -1,0 +1,28 @@
+# Harness Self Check
+
+如果当前项目无法安全加入自定义自检脚本，则使用本清单做人工或 Codex 自检。
+
+## 检查项
+
+- `AGENTS.md` 存在且保持短地图。
+- `ARCHITECTURE.md` 存在且描述当前边界。
+- `.harness/project-profile.yaml` 存在且 native sensors 真实可执行。
+- `.harness/environment.yaml` 存在，且记录运行、调试、前端入口、MCP Playwright 可用性或未确认项。
+- `.harness/workspace-map.yaml` 存在，且记录 target project、related projects 和 command graph。
+- `.agents/skills/job-agent-harness-request/SKILL.md` 存在且有 frontmatter，`description` 不超过 1024 字符。
+- task contract、stage checklist、git workflow、task routing、problem decomposition、research protocol、uncertainty gates、functional verification、runtime verification、interaction verification、task observability、visual task profile 存在。
+- `research-protocol.md` 要求需求、问题或方案不明确时先调研并记录项目适配结论。
+- `uncertainty-gates.md` 要求重要流程无法完全确认时暂停询问用户。
+- `functional-verification.md` 要求功能行为任务先生成 `functional-test-plan.md`，并在运行时或 MCP Playwright 验证前完成功能点和核心流程测试。
+- `runtime-verification.md` 要求行为变化不能只用 build/typecheck/lint 证明，Electron 交互默认使用 MCP Playwright 或 Playwright，缺少工具时先询问用户。
+- `interaction-verification.md` 要求前端交互任务生成 `interaction-test-plan.yaml`，并记录 snapshot、console、network 和截图证据。
+- `.harness/current-task.json` 与 `.harness/tasks/index.json` 存在且可被 JSON 解析。
+- `task-file-contract.md` 要求生成 `state.json`、`events.ndjson`、`agents.json`、`artifacts.json`、`validations.json`、`summary.md`。
+- `visual-task-profile.md` 要求参考图对比、blocking/major 缺陷自修复、复验截图和缩放/窄屏验证。
+- `docs/design-docs/harness-bootstrap-report.md` 存在。
+- `docs/generated/FEEDBACK_FLYWHEEL.md` 存在。
+- `docs/HARNESS_GARDENING.md` 存在。
+
+## 说明
+
+自检只证明 harness 结构完整，不证明业务行为正确。

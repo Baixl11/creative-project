@@ -1,0 +1,13 @@
+invariants:
+  - name: source_of_truth
+    rule: 需求、计划、决策、验证和交接必须落到 `.harness/tasks/<YYYY-MM-DD>/<type>/<short-slug>/`
+  - name: no_chat_only_state
+    rule: 不允许把唯一上下文只保留在聊天记录里
+  - name: native_sensors_first
+    rule: 优先使用项目原生验证命令，不用固定跨语言脚本替代
+  - name: layered_functional_verification
+    rule: 功能行为变更必须先拆功能点和核心流程并通过低层测试，再进入运行时、MCP Playwright 或视觉验证
+  - name: frontend_interaction_evidence
+    rule: 前端或 Electron 交互任务必须有 interaction-test-plan、真实交互证据或用户确认的替代验证记录
+  - name: no_auto_push
+    rule: 未经用户明确要求不得推送远端分支

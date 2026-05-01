@@ -1,0 +1,40 @@
+# Tasks
+
+每个正式需求都应在这里拥有自己的目录：
+
+```text
+.harness/tasks/<YYYY-MM-DD>/<type>/<short-slug>/
+```
+
+任务目录是跨阶段共享上下文的唯一真相源，至少包含：
+
+- `input/requirement.md`
+- `task-package.yaml`
+- `problem-decomposition.md`
+- `research-notes.md`（需求、问题或方案不明确时）
+- `functional-test-plan.md`（涉及功能行为或核心流程验证时）
+- `runtime-test-plan.md`（涉及运行时或交互验证时）
+- `interaction-test-plan.yaml`（涉及前端或 Electron 交互验证时）
+- `acceptance-criteria.md`
+- `exec-plan.md`
+- `decision-log.md`
+- `handoff.md`
+- `verification-report.md`
+- `doc-sync-report.md`
+- `trace.md`
+- `summary.md`
+- `state.json`
+- `events.ndjson`
+- `agents.json`
+- `artifacts.json`
+- `validations.json`
+
+当前 Codex 会话收到正式需求后，应先创建或续跑对应任务目录。
+
+其中 Markdown 文件面向人工阅读，`state.json`、`events.ndjson`、`agents.json`、`artifacts.json`、`validations.json` 面向前端和工具读取。机器可观测协议见 `.agents/skills/{{REQUEST_SKILL_NAME}}/references/task-observability.md`。
+
+## 任务索引
+
+- `.harness/current-task.json`：当前活跃或最近任务指针，支持“继续上一个任务”。
+- `.harness/tasks/index.json`：所有任务摘要索引，支持按标题、slug、状态、关键词查找任务。
+- 任务路由协议见 `.agents/skills/{{REQUEST_SKILL_NAME}}/references/task-routing.md`。

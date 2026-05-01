@@ -1,0 +1,40 @@
+workspace:
+  root: "."
+  target_project: "."
+  discovery_policy:
+    read_parent_and_related_projects: true
+    related_project_write_policy: "目录存在 .harness 时视为独立 harness 项目，默认只读且写入需用户确认；目录没有 .harness 时视为当前主 harness 的附属仓库，默认允许在同一任务内编辑"
+    same_task_branch_for_affiliated_repos: true
+    unresolved_cross_project_edges_require_clarification: true
+
+related_projects:
+    []
+
+command_graph:
+    -
+      command: ".venv/bin/python -m unittest discover -s tests"
+      evidence: "README.md Run the baseline tests"
+      touches:
+        - "."
+    -
+      command: ".venv/bin/python -m app.evaluate --manifest data/eval_cases/manifest.json --output-dir outputs/evaluations"
+      evidence: "README.md Run the evaluation suite"
+      touches:
+        - "."
+        - "outputs/evaluations/"
+    -
+      command: ".venv/bin/python -m app.main --jd data/sample_jd.txt --resume data/sample_resume.txt --output outputs/report.md --json-output outputs/report.json"
+      evidence: "README.md Quick start"
+      touches:
+        - "."
+        - "outputs/"
+    -
+      command: ".venv/bin/streamlit run web_app.py"
+      evidence: "README.md and WEB_DEMO.md local Web UI launch command"
+      touches:
+        - "."
+        - "outputs/web/"
+
+unresolved:
+    - "No sibling or parent project is referenced by README, scripts, requirements, or docs; workspace is treated as single-project."
+    - "Target directory is not a git repository; git branch/commit rules are generated for future use but branch operations are skipped during bootstrap."

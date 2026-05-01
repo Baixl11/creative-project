@@ -1,0 +1,4 @@
+interface:
+  display_name: "job-agent Harness Request"
+  short_description: "用项目 harness 拆解需求、视觉复刻、验证和文档回写"
+  default_prompt: "Use $job-agent-harness-request to route this requirement, read environment/workspace maps, decompose before coding, research unclear requirements, pause on high-impact unknowns, maintain task-observability files, apply functional/runtime/interaction/visual verification when relevant, implement, verify, and sync docs."

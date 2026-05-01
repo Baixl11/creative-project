@@ -1,0 +1,4 @@
+interface:
+  display_name: "Harness Project Bootstrap"
+  short_description: "诊断项目状态并生成项目专属 harness 工程化入口"
+  default_prompt: "Use $harness-project-bootstrap to analyze this repository, generate a project-specific harness, and wire native verification sensors."

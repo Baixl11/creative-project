@@ -1,0 +1,208 @@
+# Task Routing Protocol
+
+本文件定义正式需求进入 harness 后如何判断“新建任务”还是“续跑已有任务”。目标是让用户用自然语言提出反馈，不要求用户记忆 `.harness/tasks/...` 路径。
+
+## 核心原则
+
+- 用户表达业务需求，harness 负责定位上下文。
+- 默认先路由，再创建或续跑任务。
+- 同一目标、同一验收边界内的缺陷反馈，应续跑原任务。
+- 新目标、新模块、新业务能力或明显扩大范围，应创建新任务，并关联旧任务。
+- 不确定时最多问一个确认问题，不能把路由问题扩大成多轮问答。
+
+## 路由索引文件
+
+项目根目录必须维护：
+
+```text
+.harness/
+├── current-task.json
+└── tasks/
+    └── index.json
+```
+
+### `.harness/current-task.json`
+
+记录当前活跃或最近任务，支持“继续上一个任务”。
+
+```json
+{
+  "schema_version": "1.0",
+  "task_key": null,
+  "title": null,
+  "status": "none",
+  "branch": null,
+  "updated_at": null,
+  "summary": "当前没有活跃任务"
+}
+```
+
+当存在活跃任务时：
+
+```json
+{
+  "schema_version": "1.0",
+  "task_key": "2026-04-27/feature/video-panel-redesign",
+  "title": "复刻视频取证工具页面",
+  "status": "ready_for_human_review",
+  "branch": "harness/feature/video-panel-redesign",
+  "updated_at": "2026-04-27T20:30:00+08:00",
+  "summary": "等待用户确认视觉还原程度"
+}
+```
+
+### `.harness/tasks/index.json`
+
+记录所有任务摘要，支持标题、slug、状态和最近更新时间检索。
+
+```json
+{
+  "schema_version": "1.0",
+  "updated_at": "2026-04-27T20:30:00+08:00",
+  "tasks": [
+    {
+      "task_key": "2026-04-27/feature/video-panel-redesign",
+      "title": "复刻视频取证工具页面",
+      "type": "feature",
+      "slug": "video-panel-redesign",
+      "status": "ready_for_human_review",
+      "branch": "harness/feature/video-panel-redesign",
+      "created_at": "2026-04-27T20:00:00+08:00",
+      "updated_at": "2026-04-27T20:30:00+08:00",
+      "keywords": ["视频取证", "页面复刻", "AI识别"],
+      "task_path": ".harness/tasks/2026-04-27/feature/video-panel-redesign"
+    }
+  ]
+}
+```
+
+## 用户入口语义
+
+### 新需求
+
+示例：
+
+```text
+新增一个导出文件校验功能。
+```
+
+行为：
+
+- 检查是否和已有任务重复。
+- 若不是明显续跑，创建新任务。
+- 写入 `.harness/tasks/index.json`。
+- 更新 `.harness/current-task.json` 指向新任务。
+
+### 继续上一个任务
+
+示例：
+
+```text
+继续上一个任务，右侧 AI 识别面板还原得不对，请修正。
+```
+
+行为：
+
+- 读取 `.harness/current-task.json`。
+- 如果 `task_key` 有效，续跑该任务。
+- 如果当前任务不存在或已取消，回退到 `.harness/tasks/index.json` 中最近的非 `accepted`、非 `cancelled` 任务。
+- 如果仍无法判断，问用户一个确认问题。
+
+### 基于某任务继续
+
+示例：
+
+```text
+基于“视频取证页面复刻”这个任务继续改，列表区间距和参考图不一致。
+```
+
+行为：
+
+- 从 `.harness/tasks/index.json` 按 `title`、`slug`、`keywords`、`branch`、`task_key` 匹配。
+- 唯一匹配时续跑该任务。
+- 多个高相似匹配时，列出候选并问用户选择。
+- 无匹配时，创建新任务并在 `task-package.yaml` 里写 `related_tasks`。
+
+### 验收反馈修改
+
+示例：
+
+```text
+上次验收反馈：导出文件名在 Windows 下仍然非法，继续处理。
+```
+
+行为：
+
+- 优先续跑最近的 `ready_for_human_review` 任务。
+- 如果最近任务不是该领域，按关键词匹配。
+- 续跑时把反馈写入 `input/requirement.md` 或 `handoff.md` 的追加段落。
+
+## 创建新任务的条件
+
+满足任一条件时创建新任务：
+
+- 用户明确说“新需求”“新增”“另一个任务”。
+- 目标结果与原任务不同。
+- 验收边界需要重写，而不是补充。
+- 改动范围跨到原任务未覆盖的模块。
+- 原任务已经 `accepted`，且新反馈不是对已验收结果的明显回归修复。
+
+## 续跑已有任务的条件
+
+满足任一条件时续跑：
+
+- 用户说“继续”“上一个”“刚才那个”“这个任务还有问题”。
+- 用户反馈的是实现缺陷、视觉偏差、验证失败或验收未通过。
+- 需求仍在原 `acceptance-criteria.md` 覆盖范围内。
+- 任务状态是 `coding`、`needs_verification`、`verification_failed`、`needs_visual_verification`、`ready_for_human_review`。
+
+## 续跑动作
+
+续跑任务时：
+
+- 不创建新的任务目录。
+- 先读取该任务的 `state.json`、`summary.md`、`problem-decomposition.md`、`acceptance-criteria.md`、`exec-plan.md`、`handoff.md`。
+- 把新增反馈追加到 `input/requirement.md` 或 `handoff.md`。
+- 向 `events.ndjson` 追加 `resumed` 或 `feedback_received` 事件。
+- 更新 `state.json`、`agents.json`、`artifacts.json`、`validations.json`、`summary.md`。
+- 更新 `.harness/current-task.json`。
+- 更新 `.harness/tasks/index.json` 对应任务项。
+
+## 新任务关联旧任务
+
+如果必须新建，但与旧任务有关，在新任务 `task-package.yaml` 中写：
+
+```yaml
+parent_task: "2026-04-27/feature/video-panel-redesign"
+related_tasks:
+  - "2026-04-27/feature/video-panel-redesign"
+route_reason: "新需求扩大到导出流程，不再属于原页面复刻验收边界"
+```
+
+## 歧义处理
+
+- 0 个候选：创建新任务，除非用户明显表达续跑。
+- 1 个候选：直接续跑。
+- 2-3 个候选：问用户一个选择题式问题。
+- 超过 3 个候选：先按更新时间、状态和关键词缩小到 3 个。
+
+候选展示只列：
+
+- `task_key`
+- `title`
+- `status`
+- `updated_at`
+
+## 状态维护
+
+- 每次创建、续跑、验证失败、进入人工验收或验收通过，都必须更新 `.harness/current-task.json`。
+- 每次任务状态、标题、分支、关键词或更新时间变化，都必须更新 `.harness/tasks/index.json`。
+- `accepted` 任务仍保留在 index 中，但不作为“继续上一个任务”的默认目标，除非用户明确指向。
+- `cancelled` 任务只保留历史，不自动续跑。
+
+## 前端关系
+
+- 前端任务列表优先读取 `.harness/tasks/index.json`。
+- 当前任务卡片优先读取 `.harness/current-task.json`。
+- 任务详情再读取任务目录内的 `state.json`、`events.ndjson`、`agents.json`、`artifacts.json`、`validations.json`。
+- 如果 index 与任务目录状态冲突，以任务目录内的 `state.json` 为准，并提示 index 需要同步。

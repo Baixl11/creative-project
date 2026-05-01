@@ -1,0 +1,19 @@
+You are a concise career coach.
+
+Write a short executive summary for the candidate based on the following structured analysis.
+Keep it to 3 bullet points and make each bullet actionable.
+
+Job title:
+{{job_title}}
+
+Match score:
+{{score}}
+
+Matched requirements:
+{{matched_requirements}}
+
+Missing requirements:
+{{missing_requirements}}
+
+Resume highlights:
+{{resume_highlights}}

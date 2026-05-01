@@ -1,0 +1,45 @@
+{
+  "schema_version": "1.0",
+  "status": "passed",
+  "commands": [
+    {
+      "command": "rg -n \"add a simple web UI|中文截图 OCR 预留|待评估|需要补齐语言包|保留了后续接入 LLM 和 Web UI|Ran 34|Ran 31\" README.md PORTFOLIO.md DEMO_GUIDE.md WEB_DEMO.md PROJECT_STATUS.md docs",
+      "status": "passed",
+      "summary": "No stale phrases found"
+    },
+    {
+      "command": ".venv/bin/python -m unittest discover -s tests",
+      "status": "passed",
+      "summary": "37 tests passed"
+    },
+    {
+      "command": ".venv/bin/python -m py_compile web_app.py",
+      "status": "passed",
+      "summary": "web_app.py compiled"
+    },
+    {
+      "command": ".venv/bin/python -m app.evaluate --manifest data/eval_cases/manifest.json --output-dir outputs/evaluations",
+      "status": "passed",
+      "summary": "3 evaluation cases passed"
+    }
+  ],
+  "functional_checks": [
+    {
+      "name": "project status page exists",
+      "status": "passed"
+    },
+    {
+      "name": "quality score no longer uses pending placeholders",
+      "status": "passed"
+    },
+    {
+      "name": "portfolio reflects current OCR and Web UI state",
+      "status": "passed"
+    }
+  ],
+  "runtime_checks": [],
+  "residual_risks": [
+    "文档表达仍需要用户确认是否符合个人作品集口吻。",
+    "真实 LLM 恢复后需要再次更新状态页和作品集说明。"
+  ]
+}

@@ -1,0 +1,4 @@
+{"ts":"2026-04-29","event":"task_created","summary":"创建项目交付状态刷新任务"}
+{"ts":"2026-04-29","event":"evidence_collected","summary":"确认 README/PORTFOLIO/QUALITY_SCORE 存在过时状态"}
+{"ts":"2026-04-29","event":"docs_updated","summary":"新增 PROJECT_STATUS.md，更新 README、PORTFOLIO、DEMO_GUIDE、QUALITY_SCORE"}
+{"ts":"2026-04-29","event":"validation_passed","summary":"37 个 unittest、web compile、评测集均通过"}

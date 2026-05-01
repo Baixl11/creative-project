@@ -1,0 +1,36 @@
+task_key: "2026-04-29/docs/project-delivery-refresh"
+parent_task: null
+related_tasks:
+  - "2026-04-29/feature/chinese-ocr-support"
+  - "2026-04-29/fix/rewrite-copy-button-layout"
+route_reason: "new_request"
+branch: "harness/docs/project-delivery-refresh"
+created_at: "2026-04-29"
+title: "刷新项目交付状态与作品集文档"
+status: "planned"
+goal: "把当前项目完成度、剩余事项、下一步安排和质量评分同步到长期文档，保证作品集材料与代码状态一致。"
+context: "真实 LLM 配置暂时跳过；项目已完成 CLI、PDF/OCR、Web UI、评测集、harness 和多轮真实数据迭代。"
+constraints:
+  - "不改核心业务代码"
+  - "不暴露 .env、API key、真实私人数据"
+  - "保留 mock 模式作为默认安全路径"
+done_when:
+  - "新增项目状态/路线图文档"
+  - "README/PORTFOLIO/DEMO_GUIDE/QUALITY_SCORE 与当前状态一致"
+  - "验证命令通过或说明为何不需要运行"
+read_first:
+  - "README.md"
+  - "PORTFOLIO.md"
+  - "DEMO_GUIDE.md"
+  - "docs/QUALITY_SCORE.md"
+verification_commands:
+  - ".venv/bin/python -m unittest discover -s tests"
+  - ".venv/bin/python -m py_compile web_app.py"
+git_strategy:
+  branch: "harness/docs/project-delivery-refresh"
+  create_or_switch_before_coding: false
+  commit_policy: "当前目录不是 git 仓库，本任务不创建分支或提交"
+  push_policy: "不自动 push"
+related_project_edit_scope: []
+assumptions:
+  - "本轮优先做交付包装，不恢复真实 LLM 配置。"

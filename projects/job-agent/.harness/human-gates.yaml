@@ -1,0 +1,21 @@
+human_gates:
+  uncertainty_gate:
+    policy: "重要流程无法从证据中完全确认时，Codex 必须暂停并询问用户，不能靠猜测继续。"
+    status_when_blocked: ["needs_clarification", "blocked_on_decision"]
+    max_questions: 3
+    applies_to:
+      - project initialization analysis
+      - requirement analysis
+      - problem decomposition
+      - environment configuration
+      - verification command selection
+      - MCP Playwright availability and frontend interaction verification
+      - data, security, dependency, and git decisions
+      - visual acceptance criteria
+  require_confirmation:
+    - production dependency changes
+    - database migrations
+    - secrets or credential handling
+    - destructive data operations
+    - remote push or release publishing
+  note: 触发 gate 时，Codex 必须暂停并说明证据缺口、风险、影响范围和建议验证。

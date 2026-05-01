@@ -1,0 +1,236 @@
+project:
+  name: "job-agent"
+  kind: "python-ai-service"
+  confidence: "high"
+  summary: "本地运行的 Python 求职匹配 AI Agent，包含 CLI、Streamlit Web UI、PDF/OCR 输入、规则匹配、简历 bullet 改写、Markdown/JSON 输出和评测集。"
+
+bootstrap:
+  mode: "standard"
+  request_skill_name: "job-agent-harness-request"
+  allow_overwrite: false
+
+git:
+  branch_pattern: "harness/<type>/<short-slug>"
+  task_path_pattern: ".harness/tasks/<YYYY-MM-DD>/<type>/<short-slug>"
+  auto_push: false
+
+paths:
+  source:
+    - "app/"
+    - "tests/"
+    - "web_app.py"
+    - "start_web.command"
+    - "data/eval_cases/"
+  generated:
+    - "outputs/"
+    - "outputs/web/"
+    - "__pycache__/"
+    - ".pytest_cache/"
+  forbidden_to_edit:
+    - ".venv/"
+    - ".env"
+    - "outputs/"
+    - "__pycache__/"
+    - "data/my_*"
+
+workspace:
+  root: "."
+  target_project: "."
+  related_projects: []
+  command_graph:
+    - command: ".venv/bin/python -m unittest discover -s tests"
+      evidence: "README.md Run the baseline tests"
+      touches:
+        - "."
+    - command: ".venv/bin/python -m app.evaluate --manifest data/eval_cases/manifest.json --output-dir outputs/evaluations"
+      evidence: "README.md Run the evaluation suite"
+      touches:
+        - "."
+        - "outputs/evaluations/"
+    - command: ".venv/bin/python -m app.main --jd data/sample_jd.txt --resume data/sample_resume.txt --output outputs/report.md --json-output outputs/report.json"
+      evidence: "README.md Quick start"
+      touches:
+        - "."
+        - "outputs/"
+    - command: ".venv/bin/streamlit run web_app.py"
+      evidence: "README.md and WEB_DEMO.md local Web UI launch command"
+      touches:
+        - "."
+        - "outputs/web/"
+  unresolved:
+    - "No sibling or parent project is referenced by README, scripts, requirements, or docs; workspace is treated as single-project."
+    - "Target directory is not a git repository; git branch/commit rules are generated for future use but branch operations are skipped during bootstrap."
+
+environment:
+  runtime:
+    package_manager: "pip"
+    language_runtimes:
+      - "Python 3.14.4 observed in local .venv"
+    env_files:
+      - ".env"
+      - ".env.example"
+    notes:
+      - "Default mock mode runs without API key."
+      - "Live LLM mode uses OpenAI-compatible chat/completions configuration from .env."
+      - "PDF support requires pypdf; image OCR requires Pillow, pytesseract, and system Tesseract."
+      - "Chinese screenshot OCR needs OCR_LANG and Chinese Tesseract language data; not fully confirmed locally."
+  commands:
+    - name: "install"
+      command: ".venv/bin/python -m pip install -r requirements.txt"
+      category: "setup"
+      working_dir: "."
+      long_running: false
+      purpose: "Install project dependencies for PDF/OCR/Web UI/harness plan validation."
+      evidence: "README.md Quick start and requirements.txt"
+    - name: "unit_tests"
+      command: ".venv/bin/python -m unittest discover -s tests"
+      category: "test"
+      working_dir: "."
+      long_running: false
+      purpose: "Run all unit tests for parsers, matching, Agent workflow, Web UI helpers, and evaluation helpers."
+      evidence: "README.md Run the baseline tests"
+    - name: "evaluation_suite"
+      command: ".venv/bin/python -m app.evaluate --manifest data/eval_cases/manifest.json --output-dir outputs/evaluations"
+      category: "evaluation"
+      working_dir: "."
+      long_running: false
+      purpose: "Run high/medium/low match regression cases and write evaluation summaries."
+      evidence: "README.md Run the evaluation suite"
+    - name: "real_sample_cli"
+      command: ".venv/bin/python -m app.main --jd data/my_jd.txt --resume data/my_resume.pdf --output outputs/my_report.md --json-output outputs/my_report.json"
+      category: "runtime"
+      working_dir: "."
+      long_running: false
+      purpose: "Run the current private Chinese JD/PDF resume sample locally."
+      evidence: "DEMO_GUIDE.md and prior validated CLI runs"
+    - name: "web_compile"
+      command: ".venv/bin/python -m py_compile web_app.py"
+      category: "static"
+      working_dir: "."
+      long_running: false
+      purpose: "Check Streamlit Web UI syntax/import validity."
+      evidence: "validated local smoke checks"
+    - name: "web_dev"
+      command: ".venv/bin/streamlit run web_app.py"
+      category: "dev"
+      working_dir: "."
+      long_running: true
+      purpose: "Launch the local Streamlit Web UI."
+      evidence: "README.md and WEB_DEMO.md"
+    - name: "web_smoke"
+      command: "curl -I http://localhost:8501"
+      category: "runtime"
+      working_dir: "."
+      long_running: false
+      purpose: "Check that Streamlit returns HTTP 200 after web_dev starts."
+      evidence: "prior local smoke verification"
+  frontend:
+    kind: "streamlit"
+    primary_entry: "web_app.py"
+    dev_server_url: "http://localhost:8501"
+    electron_command: ""
+    healthcheck:
+      type: "url"
+      target: "http://localhost:8501"
+    viewports:
+      - name: "desktop_demo"
+        width: 1440
+        height: 1000
+        device_scale_factor: 1
+        zoom_factor: 1
+    fallback_viewports:
+      - name: "laptop"
+        width: 1366
+        height: 768
+        device_scale_factor: 1
+        zoom_factor: 1
+      - name: "narrow"
+        width: 390
+        height: 844
+        device_scale_factor: 2
+        zoom_factor: 1
+  mcp_playwright:
+    required_for_ui: true
+    availability: "unknown"
+    fallback_policy: "For formal UI behavior or visual tasks, create interaction-test-plan.yaml and pause for user confirmation if MCP Playwright/browser automation is unavailable; curl-only checks prove service reachability but not interaction behavior."
+  unresolved:
+    - "MCP Playwright availability is not proven in this project bootstrap; current verification used Streamlit launch plus curl healthcheck."
+    - "Chinese OCR language data remains environment-dependent and should be confirmed before OCR-focused tasks."
+
+sensors:
+  native:
+    - name: "unit_tests"
+      command: ".venv/bin/python -m unittest discover -s tests"
+      purpose: "Run all project unit tests."
+    - name: "evaluation_suite"
+      command: ".venv/bin/python -m app.evaluate --manifest data/eval_cases/manifest.json --output-dir outputs/evaluations"
+      purpose: "Run high/medium/low match regression checks."
+    - name: "web_compile"
+      command: ".venv/bin/python -m py_compile web_app.py"
+      purpose: "Check Streamlit app syntax."
+    - name: "real_sample_cli"
+      command: ".venv/bin/python -m app.main --jd data/my_jd.txt --resume data/my_resume.pdf --output outputs/my_report.md --json-output outputs/my_report.json"
+      purpose: "Run private real JD/PDF resume sample locally."
+  harness:
+    - name: "bootstrap_plan_validate"
+      command: ".venv/bin/python .agents/skills/harness-project-bootstrap/scripts/validate_plan.py --plan .harness/bootstrap-plan.yaml --target ."
+      purpose: "Validate bootstrap plan and template mapping."
+  future:
+    - name: "web_interaction"
+      command: "待确认 MCP Playwright 或 browser automation path"
+      purpose: "Exercise Streamlit UI scenario: choose sample, generate report, inspect score/evidence/rewrite/download behavior."
+    - name: "ocr_chinese"
+      command: "待确认 OCR_LANG=chi_sim+eng 和中文 tesseract language data"
+      purpose: "Verify Chinese JD screenshot OCR end-to-end."
+
+architecture:
+  top_level_map:
+    - "`app/main.py`: CLI entrypoint for local Agent workflow."
+    - "`app/agents/job_application_agent.py`: orchestration layer that reads inputs, parses JD/resume, matches, rewrites, and exports."
+    - "`app/services/`: domain services for parsing, matching, LLM access, report generation, result export, and resume rewriting."
+    - "`app/utils/`: file IO, input extraction, PDF/OCR adapters, and text cleaning helpers."
+    - "`app/models.py`: dataclass schemas for workflow result, match evidence, interview questions, and resume suggestions."
+    - "`web_app.py`: Streamlit presentation layer for uploads, sample runs, result tabs, and downloads."
+    - "`tests/`: standard-library unittest regression suite."
+    - "`data/eval_cases/`: high/medium/low scoring regression fixtures."
+    - "`outputs/`: generated Markdown/JSON/evaluation/Web artifacts, not source."
+    - "`docs/` and `.harness/`: harness documentation and task-control artifacts generated by bootstrap."
+  domain_boundaries:
+    - "Web UI must call `JobApplicationAgent`; it must not duplicate JD parsing, resume parsing, matching, or rewriting logic."
+    - "Input extraction belongs in `app/utils/input_reader.py`; service layers should receive text or structured values."
+    - "LLM/network calls must stay behind `LLMService` and respect mock mode, timeouts, and API-key boundaries."
+    - "Generated reports and evaluations belong under `outputs/`; they are runtime artifacts, not source-of-truth code."
+    - "Private real inputs under `data/my_*` are local test data and must not be committed or used in public docs without anonymization."
+    - "Behavior-changing tasks require unit/evaluation checks plus runtime or interaction verification when UI/CLI behavior changes."
+  forbidden_rules:
+    - "Do not commit `.env`, `.venv/`, `outputs/`, Python caches, or private `data/my_*` files."
+    - "Do not put API keys, resumes, phone numbers, emails, or private JD data into task files or public docs."
+    - "Do not treat build/compile success as behavior proof for Agent, CLI, OCR/PDF, or Web UI changes."
+    - "Do not edit generated runtime outputs to fake successful behavior."
+    - "Do not enable live LLM mode without explicit user confirmation and cost/secret awareness."
+  generated_paths:
+    - "outputs/"
+    - "outputs/evaluations/"
+    - "outputs/web/"
+    - ".harness/tasks/"
+    - "docs/generated/"
+
+docs:
+  detection_evidence:
+    - "README.md documents Python local AI Agent, CLI command, Streamlit Web UI, tests, and evaluation suite."
+    - "requirements.txt lists pypdf, Pillow, pytesseract, streamlit, and PyYAML."
+    - "app/ contains agents, services, utils, prompts, config, models, evaluation, and CLI entrypoint."
+    - "web_app.py is a Streamlit Web UI with upload/sample modes."
+    - "tests/ contains unittest coverage for Agent workflow, parser, matcher, input reader, rewriter, evaluation, and Web UI helpers."
+    - "data/eval_cases/manifest.json defines high/medium/low regression cases."
+    - "No package.json, go.mod, Electron, Docker, CI, or sibling-project command references were found in target project docs/config."
+  assumptions:
+    - "Bootstrap mode selected as standard because the project has native tests, evaluation suite, Web UI, and a growing portfolio workflow, despite no git repository in target."
+    - "Python 3.14.4 is the observed local runtime; future setup may choose another compatible Python 3 version if dependencies support it."
+    - "Streamlit default local URL is treated as http://localhost:8501 based on docs and observed smoke tests."
+    - "MCP Playwright/browser automation availability is not guaranteed and must be confirmed before formal interaction verification."
+  skipped_items:
+    - "No git branch or commit operations were run because the target directory is not a git repository."
+    - "No live LLM/API verification was run because mock mode is the safe default and no secret should be assumed."
+    - "No Chinese screenshot OCR end-to-end check was run because Chinese Tesseract language data availability is unresolved."
+    - "No full browser interaction test was run during bootstrap; only Streamlit launch and curl healthcheck were previously validated."

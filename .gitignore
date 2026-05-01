@@ -1,0 +1,10 @@
+.DS_Store
+__pycache__/
+*.py[cod]
+.env
+.venv/
+
+# Runtime outputs and private local samples are ignored by each project too.
+outputs/
+data/my_*
+

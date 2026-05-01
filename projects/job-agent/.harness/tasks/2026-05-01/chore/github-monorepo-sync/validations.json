@@ -1,0 +1,47 @@
+{
+  "schema_version": "1.0",
+  "status": "passed_before_remote_push",
+  "commands": [
+    {
+      "command": ".venv/bin/python -m unittest discover -s tests",
+      "status": "passed",
+      "summary": "41 tests passed in source project and staged monorepo copy"
+    },
+    {
+      "command": ".venv/bin/python -m app.evaluate --manifest data/eval_cases/manifest.json --output-dir outputs/evaluations",
+      "status": "passed",
+      "summary": "3 evaluation cases passed"
+    },
+    {
+      "command": ".venv/bin/python -m py_compile web_app.py scripts/generate_portfolio_pdf.py",
+      "status": "passed",
+      "summary": "Web UI and portfolio PDF generator compiled"
+    },
+    {
+      "command": ".venv/bin/python -m app.main --jd data/demo_jd_cn.txt --resume data/demo_resume_cn.txt --output outputs/demo_cn_report.md --json-output outputs/demo_cn_report.json",
+      "status": "passed",
+      "summary": "Public Chinese demo produced score 95 in mock mode"
+    },
+    {
+      "command": ".venv/bin/python -m app.main --jd data/my_jd.txt --resume data/my_resume.pdf --output outputs/my_report.md --json-output outputs/my_report.json",
+      "status": "passed",
+      "summary": "Private local sample still produced score 95 in mock mode"
+    }
+  ],
+  "security_checks": [
+    {
+      "name": "ignored private files",
+      "status": "passed",
+      "summary": "Staged sync excludes .env, .venv, data/my_*, outputs, .DS_Store, pyc files"
+    },
+    {
+      "name": "known personal test data removed",
+      "status": "passed",
+      "summary": "Replaced suspected real phone/email/name in parser test with demo data"
+    }
+  ],
+  "residual_risks": [
+    "Remote push still depends on GitHub SSH permission and network availability.",
+    "GitHub page structure should be visually checked by the user after push."
+  ]
+}

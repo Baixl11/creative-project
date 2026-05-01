@@ -1,0 +1,36 @@
+# Harness Gardening
+
+## 目标
+
+本文件用于维护 harness 本身，避免规则、skill、传感器和文档随着项目演进而腐烂。
+
+## 触发条件
+
+- 同一类错误在两个以上任务中重复出现。
+- 某条规则经常被 Codex 忽略。
+- 某个传感器长期误报、漏报或成本过高。
+- 项目结构、CI、发布流程或技术栈发生变化。
+- 模型或 Codex 运行时能力明显变化。
+
+## 检查清单
+
+- `AGENTS.md` 是否仍是短地图。
+- request skill 是否仍然精简。
+- `project-profile.yaml` 中的命令是否仍真实可用。
+- `environment.yaml` 中的启动、调试、前端入口、视口、测试数据和 MCP Playwright 可用性是否仍真实。
+- `ARCHITECTURE.md` 是否反映当前边界。
+- `research-protocol.md` 是否覆盖反复出现的调研缺口。
+- `functional-verification.md` 是否覆盖反复出现的“直接端到端验证但未先测功能点”“临时脚本无记录”“核心流程缺少低层测试”问题。
+- `runtime-verification.md` 是否覆盖反复出现的运行时、交互、Electron、API 或跨项目联调验证缺口。
+- `interaction-verification.md` 是否覆盖前端任务中反复出现的“只截图不点击”“未检查 console/network”“缺少复验”问题。
+- `human-gates.yaml` 是否覆盖高风险操作。
+- `uncertainty-gates.md` 是否覆盖反复导致偏差的关键未知项。
+- 是否有可以删除的过时规则、模板或传感器。
+
+## 处理方式
+
+- 一次性问题写入任务文件，不进入长期规则。
+- 重复问题进入 `docs/generated/FEEDBACK_FLYWHEEL.md`。
+- 可机械化的问题优先转成传感器。
+- 可自动化的交互问题优先转成 MCP Playwright、Playwright 或项目原生测试脚本。
+- 不可机械化的行为正确性问题进入人工验收 gate。

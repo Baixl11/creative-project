@@ -1,0 +1,15 @@
+{
+  "schema_version": "1.0",
+  "artifacts": [
+    {
+      "path": "web_app.py",
+      "kind": "source",
+      "status": "updated"
+    },
+    {
+      "path": "tests/test_web_app.py",
+      "kind": "test",
+      "status": "updated"
+    }
+  ]
+}

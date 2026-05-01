@@ -1,0 +1,11 @@
+{
+  "schema_version": "1.0",
+  "artifacts": [
+    {"path": "problem-decomposition.md", "status": "present"},
+    {"path": "acceptance-criteria.md", "status": "present"},
+    {"path": "task-package.yaml", "status": "present"},
+    {"path": "validations.json", "status": "present"},
+    {"path": "verification-report.md", "status": "present"},
+    {"path": "summary.md", "status": "present"}
+  ]
+}

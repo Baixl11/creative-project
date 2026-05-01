@@ -1,0 +1,68 @@
+project:
+  name: "{{PROJECT_NAME}}"
+  kind: "{{PROJECT_KIND}}"
+
+harness:
+  request_skill_name: "{{REQUEST_SKILL_NAME}}"
+  branch_pattern: "harness/<type>/<short-slug>"
+  task_path_pattern: ".harness/tasks/<YYYY-MM-DD>/<type>/<short-slug>"
+  default_local_commit: true
+  auto_push: false
+  routing:
+    enabled: true
+    current_task: .harness/current-task.json
+    task_index: .harness/tasks/index.json
+  observability:
+    enabled: true
+    state_entry: state.json
+    event_stream: events.ndjson
+  runtime_verification:
+    enabled: true
+    build_only_is_insufficient_for_behavior: true
+    electron_default_tool: mcp_playwright_or_playwright
+    fallback_policy: "缺少工具或测试方法时暂停确认"
+
+workspace:
+  scan_parent: true
+  scan_roots:
+    - "."
+    - ".."
+  related_project_write_policy: "harnessed_repo_ask_affiliated_repo_allow"
+  edit_boundary_signal: ".harness"
+  same_task_branch_for_affiliated_repos: true
+  related_projects:
+{{RELATED_PROJECTS_YAML}}
+
+environment:
+  runtime:
+{{ENV_RUNTIME_YAML_4}}
+  commands:
+{{ENV_COMMANDS_YAML_4}}
+  frontend:
+{{FRONTEND_ENVIRONMENT_YAML_4}}
+  mcp_playwright:
+{{MCP_PLAYWRIGHT_YAML_4}}
+  unresolved:
+{{ENVIRONMENT_UNRESOLVED_YAML_4}}
+
+paths:
+  source:
+{{SOURCE_PATHS_YAML}}
+  generated:
+{{GENERATED_PATHS_YAML}}
+  forbidden_to_edit:
+{{FORBIDDEN_PATHS_YAML}}
+
+sensors:
+  native:
+{{NATIVE_SENSORS_YAML}}
+
+human_gates:
+  uncertainty_gate:
+    enabled: true
+    max_questions: 3
+    pause_on_high_impact_unknowns: true
+  require_approval_for:
+    - "database migration"
+    - "new production dependency"
+    - "secret or credential handling"

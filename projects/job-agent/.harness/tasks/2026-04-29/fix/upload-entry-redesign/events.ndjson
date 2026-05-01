@@ -1,0 +1,6 @@
+{"ts":"2026-04-29","event":"task_created","summary":"创建上传入口 redesign 任务"}
+{"ts":"2026-04-29","event":"implementation_completed","summary":"上传区先做了较重的视觉改版，后续根据用户反馈收敛为两个简洁入口"}
+{"ts":"2026-04-29","event":"validation_passed","summary":"Web UI 测试、全量 unittest、web compile、评测集通过"}
+{"ts":"2026-04-29","event":"runtime_validation_blocked","summary":"Streamlit 临时启动因本地端口授权超时未执行"}
+{"ts":"2026-04-29","event":"design_feedback_received","summary":"用户指出上传入口应保留两个简单文件入口，并去掉默认格式说明"}
+{"ts":"2026-04-29","event":"implementation_revised","summary":"隐藏 Streamlit 默认 stFileUploaderDropzoneInstructions，保留中文轻量格式说明"}

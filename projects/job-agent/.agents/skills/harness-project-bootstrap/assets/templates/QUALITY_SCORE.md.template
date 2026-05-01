@@ -1,0 +1,13 @@
+# Quality Score
+
+## 当前基线
+
+- 架构清晰度：{{ARCHITECTURE_SCORE}}
+- 类型/静态约束：{{STATIC_SCORE}}
+- 验证能力：{{VERIFICATION_SCORE}}
+- 文档可发现性：{{DOC_SCORE}}
+- Harness 可追溯性：{{HARNESS_SCORE}}
+
+## 说明
+
+这是 bootstrap 阶段的初始评分。后续 `doc_gardener` 应根据真实任务、验证覆盖率和反馈沉淀持续更新。

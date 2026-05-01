@@ -1,0 +1,40 @@
+task_key: "2026-04-29/feature/chinese-ocr-support"
+parent_task: null
+related_tasks: []
+route_reason: "new_request"
+branch: "harness/feature/chinese-ocr-support"
+created_at: "2026-04-29"
+title: "补齐中文 OCR 支持"
+status: "planned"
+goal: "让 JD 截图 OCR 对中文更友好：默认优先中文+英文，缺少语言包时给出明确安装提示，并补充测试和文档。"
+context: "图片 OCR 已存在于 app/utils/input_reader.py，但默认语言为 eng；本机 tesseract --list-langs 只显示 eng、osd、snum。"
+constraints:
+  - "遵守 AGENTS.md 与 ARCHITECTURE.md"
+  - "不提交私人 data/my_* 输入或 outputs 运行产物"
+  - "不把缺少系统语言包伪装成 OCR 功能已完全通过"
+done_when:
+  - "OCR 默认语言策略适合中文 JD 截图"
+  - "缺少 chi_sim 语言包时，错误信息能指导用户安装和设置 OCR_LANG"
+  - "单元测试覆盖默认语言、环境变量覆盖、缺失语言包提示"
+  - "README/演示文档同步中文 OCR 使用方式"
+  - "项目原生测试、评测、真实样本 CLI 通过"
+read_first:
+  - "AGENTS.md"
+  - "ARCHITECTURE.md"
+  - ".harness/environment.yaml"
+  - "app/utils/input_reader.py"
+  - "tests/test_input_reader.py"
+verification_commands:
+  - ".venv/bin/python -m unittest discover -s tests"
+  - ".venv/bin/python -m app.evaluate --manifest data/eval_cases/manifest.json --output-dir outputs/evaluations"
+  - ".venv/bin/python -m py_compile web_app.py"
+  - ".venv/bin/python -m app.main --jd data/my_jd.txt --resume data/my_resume.pdf --output outputs/my_report.md --json-output outputs/my_report.json"
+  - "tesseract --list-langs"
+git_strategy:
+  branch: "harness/feature/chinese-ocr-support"
+  create_or_switch_before_coding: false
+  commit_policy: "当前目录不是 git 仓库，本任务不创建分支或提交"
+  push_policy: "不自动 push"
+related_project_edit_scope: []
+assumptions:
+  - "用户希望优先补本地中文截图 OCR，而不是接入云端 OCR 服务。"

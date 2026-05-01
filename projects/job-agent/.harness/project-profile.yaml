@@ -1,0 +1,217 @@
+project:
+  name: "job-agent"
+  kind: "python-ai-service"
+  confidence: "high"
+
+harness:
+  bootstrap_mode: "standard"
+  entry:
+    mode: codex-conversation-skill
+    project_skill_path: .agents/skills/job-agent-harness-request
+    task_context_root: .harness/tasks
+    task_path_pattern: .harness/tasks/<YYYY-MM-DD>/<type>/<short-slug>
+    environment: .harness/environment.yaml
+    workspace_map: .harness/workspace-map.yaml
+  stages:
+    - planner
+    - coder
+    - verifier
+    - doc_gardener
+  task_creation:
+    mode: skill-template
+    contract: .agents/skills/job-agent-harness-request/references/task-file-contract.md
+  task_routing:
+    enabled: true
+    reference: .agents/skills/job-agent-harness-request/references/task-routing.md
+    current_task: .harness/current-task.json
+    task_index: .harness/tasks/index.json
+    default_resume_sources:
+      - current-task.json
+      - tasks/index.json
+    ambiguity_policy: "候选不唯一时只问一个确认问题"
+  workspace:
+    map: .harness/workspace-map.yaml
+    root: "."
+    target_project: "."
+    related_projects:
+      []
+    command_graph:
+      -
+        command: ".venv/bin/python -m unittest discover -s tests"
+        evidence: "README.md Run the baseline tests"
+        touches:
+          - "."
+      -
+        command: ".venv/bin/python -m app.evaluate --manifest data/eval_cases/manifest.json --output-dir outputs/evaluations"
+        evidence: "README.md Run the evaluation suite"
+        touches:
+          - "."
+          - "outputs/evaluations/"
+      -
+        command: ".venv/bin/python -m app.main --jd data/sample_jd.txt --resume data/sample_resume.txt --output outputs/report.md --json-output outputs/report.json"
+        evidence: "README.md Quick start"
+        touches:
+          - "."
+          - "outputs/"
+      -
+        command: ".venv/bin/streamlit run web_app.py"
+        evidence: "README.md and WEB_DEMO.md local Web UI launch command"
+        touches:
+          - "."
+          - "outputs/web/"
+    policy: "dev/build/test/lint/package/release 涉及其他项目时，必须读取 workspace-map 并分析相关项目；相关项目存在 .harness 时默认只读且写入需用户确认；无 .harness 的附属子仓库默认可在同一任务内编辑"
+    branch_policy: "可编辑附属子仓库使用与主仓库相同的 harness/<type>/<short-slug> 分支"
+  environment:
+    file: .harness/environment.yaml
+    required_for:
+      - frontend_dev
+      - interaction_verification
+      - runtime_verification
+    unknown_policy: "运行命令、入口 URL、测试数据或 MCP Playwright 可用性无法确认时，必须进入 needs_clarification"
+  problem_decomposition:
+    enabled: true
+    reference: .agents/skills/job-agent-harness-request/references/problem-decomposition.md
+    required_before_coding: true
+    required_task_files:
+      - problem-decomposition.md
+      - acceptance-criteria.md
+    ready_gate: "问题定义、方案选择、工作拆分和验收拆分均已完成"
+  research_protocol:
+    enabled: true
+    reference: .agents/skills/job-agent-harness-request/references/research-protocol.md
+    required_when_unclear: true
+    task_file: research-notes.md
+    ready_gate: "需求、问题或方案不明确时，已记录本地证据、必要外部资料、候选方案和项目适配结论"
+  runtime_verification:
+    enabled: true
+    reference: .agents/skills/job-agent-harness-request/references/runtime-verification.md
+    required_when_behavior_changes: true
+    task_file: runtime-test-plan.md
+    build_only_is_insufficient_for_behavior: true
+    frontend_default_tool: mcp_playwright_or_playwright
+    fallback_policy: "缺少工具、启动方式或测试数据时，暂停确认测试方式；用户确认后再人工验证或编写项目内测试脚本"
+  functional_verification:
+    enabled: true
+    reference: .agents/skills/job-agent-harness-request/references/functional-verification.md
+    task_file: functional-test-plan.md
+    required_before_runtime: true
+    required_when_behavior_or_core_flow_changes: true
+    preferred_order:
+      - static_commands
+      - functional_checks
+      - core_flow_checks
+      - runtime_checks
+      - interaction_checks
+      - visual_or_human_review
+    hard_gate: "功能点和核心流程验证未通过时，不得进入 MCP Playwright 或 ready_for_human_review"
+  interaction_verification:
+    enabled: true
+    reference: .agents/skills/job-agent-harness-request/references/interaction-verification.md
+    required_for_frontend_behavior: true
+    task_file: interaction-test-plan.yaml
+    preferred_tool: mcp_playwright
+    hard_gate: "没有 interaction-test-plan.yaml、MCP/Playwright 证据或用户确认的替代方案时，不得进入 ready_for_human_review"
+  uncertainty_gates:
+    enabled: true
+    reference: .agents/skills/job-agent-harness-request/references/uncertainty-gates.md
+    pause_on_high_impact_unknowns: true
+    blocked_statuses:
+      - needs_clarification
+      - blocked_on_decision
+    max_questions: 3
+    applies_to:
+      - initialization_analysis
+      - requirement_analysis
+      - problem_decomposition
+      - environment_configuration
+      - verification_selection
+      - data_security_dependency_git_decisions
+      - visual_acceptance
+  observability:
+    enabled: true
+    reference: .agents/skills/job-agent-harness-request/references/task-observability.md
+    task_state_entry: state.json
+    event_stream: events.ndjson
+    required_task_files:
+      - summary.md
+      - state.json
+      - events.ndjson
+      - agents.json
+      - artifacts.json
+      - validations.json
+    frontend_contract: "Markdown 给人读，JSON/YAML/NDJSON 给工具读"
+  conditional_profiles:
+    screenshot_ui:
+      enabled: true
+      reference: .agents/skills/job-agent-harness-request/references/visual-task-profile.md
+      triggers:
+        - screenshot
+        - design image
+        - figma
+        - one-to-one replication
+        - UI fidelity
+        - 页面实现
+        - 一比一
+      required_task_files:
+        - visual-spec.md
+        - visual-checklist.md
+        - visual-review.md
+        - visual-defects.md
+        - snapshots/
+      required_loop: "截图 -> 区域级对比 -> 缺陷记录 -> blocking/major 自修复 -> 复验截图"
+      scale_required: true
+      ready_gate: "已完成参考图与实际截图对比、缩放/窄屏验证，visual-defects.md 中没有 open 状态的 blocking 或 major 缺陷"
+  automation:
+    subagents: disabled-by-default
+    command_pipeline: disabled
+  human_review:
+    required_for_behavior_acceptance: true
+    verified_does_not_mean_accepted: true
+  git_lifecycle:
+    enabled_when_git_repo: true
+    branch_pattern: harness/<type>/<short-slug>
+    commit_policy: 模块闭环、风险边界或约 300-500 行变更量时本地提交
+    push_policy: never_without_explicit_user_request
+
+boundaries:
+  - "Web UI must call `JobApplicationAgent`; it must not duplicate JD parsing, resume parsing, matching, or rewriting logic."
+  - "Input extraction belongs in `app/utils/input_reader.py`; service layers should receive text or structured values."
+  - "LLM/network calls must stay behind `LLMService` and respect mock mode, timeouts, and API-key boundaries."
+  - "Generated reports and evaluations belong under `outputs/`; they are runtime artifacts, not source-of-truth code."
+  - "Private real inputs under `data/my_*` are local test data and must not be committed or used in public docs without anonymization."
+  - "Behavior-changing tasks require unit/evaluation checks plus runtime or interaction verification when UI/CLI behavior changes."
+
+sensors:
+  harness:
+    - name: "bootstrap_plan_validate"
+      command: ".venv/bin/python .agents/skills/harness-project-bootstrap/scripts/validate_plan.py --plan .harness/bootstrap-plan.yaml --target ."
+      purpose: "Validate bootstrap plan and template mapping."
+  native:
+    - name: "unit_tests"
+      command: ".venv/bin/python -m unittest discover -s tests"
+      purpose: "Run all project unit tests."
+    - name: "evaluation_suite"
+      command: ".venv/bin/python -m app.evaluate --manifest data/eval_cases/manifest.json --output-dir outputs/evaluations"
+      purpose: "Run high/medium/low match regression checks."
+    - name: "web_compile"
+      command: ".venv/bin/python -m py_compile web_app.py"
+      purpose: "Check Streamlit app syntax."
+    - name: "real_sample_cli"
+      command: ".venv/bin/python -m app.main --jd data/my_jd.txt --resume data/my_resume.pdf --output outputs/my_report.md --json-output outputs/my_report.json"
+      purpose: "Run private real JD/PDF resume sample locally."
+  future:
+    - name: "web_interaction"
+      command: "待确认 MCP Playwright 或 browser automation path"
+      purpose: "Exercise Streamlit UI scenario: choose sample, generate report, inspect score/evidence/rewrite/download behavior."
+    - name: "ocr_chinese"
+      command: "待确认 OCR_LANG=chi_sim+eng 和中文 tesseract language data"
+      purpose: "Verify Chinese JD screenshot OCR end-to-end."
+
+documentation:
+  source_of_truth:
+    - AGENTS.md
+    - ARCHITECTURE.md
+    - .harness/environment.yaml
+    - .harness/workspace-map.yaml
+    - .harness/tasks/<YYYY-MM-DD>/<type>/<short-slug>/
+    - docs/

@@ -1,0 +1,23 @@
+# Commands
+
+## 首选入口
+
+- 在当前 Codex 对话中直接提出需求，优先触发项目级 skill `{{REQUEST_SKILL_NAME}}`。
+
+## 项目命令
+
+{{PROJECT_COMMANDS}}
+
+## 运行与调试环境
+
+这些命令来自 `.harness/environment.yaml`，用于启动、调试和交互验证入口。
+
+{{ENVIRONMENT_COMMANDS}}
+
+## 命令图
+
+{{COMMAND_GRAPH}}
+
+## Harness 说明
+
+这些命令用于 Codex 自验证，不是正式需求的用户入口。命令涉及相关项目时，先读 `.harness/workspace-map.yaml`。

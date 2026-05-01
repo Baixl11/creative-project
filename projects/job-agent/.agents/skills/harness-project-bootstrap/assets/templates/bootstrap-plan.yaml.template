@@ -1,0 +1,69 @@
+project:
+  name: "{{PROJECT_NAME}}"
+  kind: "{{PROJECT_KIND}}"
+  confidence: "{{PROFILE_CONFIDENCE}}"
+  summary: "{{PROJECT_SUMMARY}}"
+
+bootstrap:
+  mode: "{{BOOTSTRAP_MODE}}"
+  request_skill_name: "{{REQUEST_SKILL_NAME}}"
+  allow_overwrite: false
+
+git:
+  branch_pattern: "harness/<type>/<short-slug>"
+  task_path_pattern: ".harness/tasks/<YYYY-MM-DD>/<type>/<short-slug>"
+  auto_push: false
+
+paths:
+  source:
+{{SOURCE_PATHS_YAML}}
+  generated:
+{{GENERATED_PATHS_YAML}}
+  forbidden_to_edit:
+{{FORBIDDEN_PATHS_YAML}}
+
+workspace:
+  root: "{{WORKSPACE_ROOT}}"
+  target_project: "{{WORKSPACE_TARGET_PROJECT}}"
+  related_projects:
+{{RELATED_PROJECTS_YAML}}
+  command_graph:
+{{COMMAND_GRAPH_YAML}}
+  unresolved:
+{{WORKSPACE_UNRESOLVED_YAML}}
+
+environment:
+  runtime:
+{{ENV_RUNTIME_YAML_4}}
+  commands:
+{{ENV_COMMANDS_YAML_4}}
+  frontend:
+{{FRONTEND_ENVIRONMENT_YAML_4}}
+  mcp_playwright:
+{{MCP_PLAYWRIGHT_YAML_4}}
+  unresolved:
+{{ENVIRONMENT_UNRESOLVED_YAML_4}}
+
+sensors:
+  native:
+{{NATIVE_SENSORS_YAML}}
+  harness:
+{{HARNESS_SENSORS_YAML}}
+
+architecture:
+  top_level_map:
+{{TOP_LEVEL_MAP_YAML}}
+  domain_boundaries:
+{{DOMAIN_BOUNDARIES_YAML}}
+  forbidden_rules:
+{{FORBIDDEN_RULES_YAML}}
+  generated_paths:
+{{GENERATED_PATHS_YAML}}
+
+docs:
+  detection_evidence:
+{{DETECTION_EVIDENCE_YAML}}
+  assumptions:
+{{ASSUMPTIONS_YAML}}
+  skipped_items:
+{{SKIPPED_ITEMS_YAML}}

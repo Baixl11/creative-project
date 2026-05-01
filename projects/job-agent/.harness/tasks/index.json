@@ -1,0 +1,56 @@
+{
+  "schema_version": "1.0",
+  "updated_at": "2026-05-01",
+  "tasks": [
+    {
+      "task_key": "2026-04-29/feature/chinese-ocr-support",
+      "title": "补齐中文 OCR 支持",
+      "type": "feature",
+      "slug": "chinese-ocr-support",
+      "status": "ready_for_human_review",
+      "branch": "harness/feature/chinese-ocr-support",
+      "summary": "chi_sim 已安装，中文 OCR smoke 已通过；真实用户截图质量待人工确认。",
+      "updated_at": "2026-04-29"
+    },
+    {
+      "task_key": "2026-04-29/fix/rewrite-copy-button-layout",
+      "title": "调整简历改写复制按钮布局",
+      "type": "fix",
+      "slug": "rewrite-copy-button-layout",
+      "status": "ready_for_human_review",
+      "branch": "harness/fix/rewrite-copy-button-layout",
+      "summary": "已把简历改写建议复制按钮移到文本框外侧；运行时浏览器验证待人工确认。",
+      "updated_at": "2026-04-29"
+    },
+    {
+      "task_key": "2026-04-29/docs/project-delivery-refresh",
+      "title": "刷新项目交付状态与作品集文档",
+      "type": "docs",
+      "slug": "project-delivery-refresh",
+      "status": "ready_for_human_review",
+      "branch": "harness/docs/project-delivery-refresh",
+      "summary": "已同步项目完成度、剩余事项、下一步安排和质量评分，待用户确认表达偏好。",
+      "updated_at": "2026-04-29"
+    },
+    {
+      "task_key": "2026-04-29/fix/upload-entry-redesign",
+      "title": "重新设计上传入口和格式说明",
+      "type": "fix",
+      "slug": "upload-entry-redesign",
+      "status": "ready_for_human_review",
+      "branch": "harness/fix/upload-entry-redesign",
+      "summary": "上传区已收敛为两个简洁上传入口，并隐藏默认英文格式说明，页面视觉待人工确认。",
+      "updated_at": "2026-04-29"
+    },
+    {
+      "task_key": "2026-05-01/chore/github-monorepo-sync",
+      "title": "同步项目到 GitHub monorepo",
+      "type": "chore",
+      "slug": "github-monorepo-sync",
+      "status": "coding",
+      "branch": "harness/chore/github-monorepo-sync",
+      "summary": "已完成 monorepo 临时同步、安全检查和本地验证，准备提交并 push 到 GitHub。",
+      "updated_at": "2026-05-01"
+    }
+  ]
+}

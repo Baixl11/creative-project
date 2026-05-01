@@ -1,0 +1,9 @@
+{
+  "schema_version": "1.0",
+  "task_key": "2026-04-29/fix/rewrite-copy-button-layout",
+  "title": "调整简历改写复制按钮布局",
+  "status": "ready_for_human_review",
+  "stage": "verifier",
+  "updated_at": "2026-04-29",
+  "summary": "复制按钮已移到文本框外侧；34 个测试、评测、编译和真实样本 CLI 通过，运行时浏览器验证待人工确认。"
+}

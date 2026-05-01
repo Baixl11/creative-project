@@ -1,0 +1,38 @@
+# {{PROJECT_NAME}} Architecture
+
+## 一句话
+
+{{PROJECT_SUMMARY}}
+
+## 顶层结构
+
+{{TOP_LEVEL_MAP}}
+
+## 领域与边界
+
+{{DOMAIN_BOUNDARIES}}
+
+## 禁止事项
+
+{{FORBIDDEN_RULES}}
+
+## 生成物
+
+{{GENERATED_PATHS}}
+
+## Workspace 与相关项目
+
+{{RELATED_PROJECTS}}
+
+## 核心命令图
+
+{{COMMAND_GRAPH}}
+
+## Harness 作用点
+
+- 用 `.harness/tasks/<YYYY-MM-DD>/<type>/<short-slug>/` 承载跨阶段共享上下文。
+- 用 `.harness/environment.yaml` 记录运行、调试、前端入口、视口和 MCP Playwright 能力。
+- 用 `.harness/workspace-map.yaml` 记录跨项目命令图和相关项目边界。
+- 用项目级 skill 做对话式需求入口。
+- 用项目原生传感器证明修改结果。
+- 用 git 任务分支和阶段性 commit 保留代码演进边界。

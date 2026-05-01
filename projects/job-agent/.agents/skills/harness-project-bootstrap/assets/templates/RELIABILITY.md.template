@@ -1,0 +1,15 @@
+# Reliability
+
+## 当前定义
+
+这个项目当前的可靠性主要依赖：
+
+{{RELIABILITY_MECHANISMS}}
+
+## 当前缺口
+
+{{RELIABILITY_GAPS}}
+
+## 后续建议
+
+{{RELIABILITY_NEXT_STEPS}}

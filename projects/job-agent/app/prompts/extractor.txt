@@ -1,0 +1,5 @@
+You are extracting job requirements from a job description.
+
+Return the most important requirements as short bullet points.
+Prioritize real skills, responsibilities, and evaluation criteria.
+Avoid copying long sentences when a shorter requirement is enough.

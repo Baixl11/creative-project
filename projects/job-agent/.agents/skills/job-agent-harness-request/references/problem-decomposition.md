@@ -1,0 +1,165 @@
+# Problem Decomposition Protocol
+
+本文件定义正式需求的“先拆问题，再拆方案，再拆执行，再拆验收”流程。所有非纯问答任务默认启用。
+
+## 目标
+
+避免 Codex 直接进入编码，导致：
+
+- 需求目标没有被明确复述。
+- 当前状态和期望状态混在一起。
+- 未确认假设被写死到实现里。
+- 需求或问题不清时没有先调研，直接凭经验给方案。
+- 外部搜索结果没有结合当前项目约束就被套用。
+- 执行计划只列步骤，没有解释为什么这样做。
+- 验收标准只覆盖构建或类型检查，缺少用户可见结果。
+- 把 build 通过误当成运行时行为或交互流程正确。
+
+## 必需产物
+
+每个正式任务在编码前必须生成：
+
+```text
+.harness/tasks/<YYYY-MM-DD>/<type>/<short-slug>/
+├── problem-decomposition.md
+├── acceptance-criteria.md
+└── research-notes.md（触发调研时）
+```
+
+`exec-plan.md` 必须基于这两个文件生成，不能替代它们。
+
+## 拆解层级
+
+### 1. 问题定义
+
+在 `problem-decomposition.md` 中写清：
+
+- 用户目标：用户最终想得到什么可观察结果。
+- 当前状态：仓库、页面、接口、流程或文档现在是什么样。
+- 期望状态：完成后应该是什么样。
+- 非目标：本轮明确不做什么。
+- 硬约束：来自用户、AGENTS、架构、安全、环境、依赖、时间或兼容性的限制。
+- 不确定点：不能确认但会影响方案的事实。
+
+### 2. 问题分类
+
+选择主要类型，并允许补充次要类型：
+
+- `feature`：新增用户可见能力。
+- `fix`：修复错误、回归或不符合预期的行为。
+- `refactor`：改变结构但不改变外部行为。
+- `ui-fidelity`：截图、设计图、一比一复刻、视觉还原。
+- `integration`：对接外部系统、IPC、API、数据库、模型服务。
+- `quality`：测试、类型、构建、可靠性、性能、安全或可维护性。
+- `docs`：文档或规则维护。
+
+### 3. 证据与假设
+
+至少记录：
+
+- 已读取的文件和证据。
+- 从证据推导出的事实。
+- 仍需假设的内容。
+- 需要询问用户的问题。
+
+规则：
+
+- 证据不足时，先补充阅读。
+- 如果需求、问题、根因、方案、环境、依赖行为或验收标准不明确，先按 `research-protocol.md` 调研并写 `research-notes.md`。
+- 调研必须包含当前项目证据；可以使用外部工具搜索官方文档、规范、issue、release note 或高质量实践，但不得直接套用外部方案。
+- 关键假设会影响行为、数据、安全、视觉验收、运行环境、验证命令、git 策略或外部接口时，必须向用户询问。
+- 任何重要决策无法从证据中完全确认时，必须按 `uncertainty-gates.md` 暂停；不得把关键未知项写入 `assumptions` 后继续执行。
+- 低风险假设可以继续执行，但必须写入 `assumptions`。
+
+### 4. 方案选项
+
+至少列出一个首选方案；复杂任务应列出 2-3 个方案。
+
+每个方案写：
+
+- 修改范围。
+- 优点。
+- 风险。
+- 验证方式。
+- 项目适配性：为什么适合当前架构、依赖版本、workspace 命令图和验证能力。
+- 调研依据：引用本地证据或 `research-notes.md` 中的外部资料。
+- 放弃该方案或选择该方案的理由。
+
+不得只写“按需求实现”。必须说明为什么该方案对当前仓库最合适。
+
+### 5. 工作拆分
+
+把首选方案拆成可执行工作包：
+
+```text
+| 工作包 | 目标 | 预计文件 | 依赖 | 验证 |
+| --- | --- | --- | --- | --- |
+| UI layout | 建立主网格 | src/App.vue, src/style.css | 无 | 截图对照 |
+```
+
+规则：
+
+- 工作包应有边界，避免一个包同时改 UI、接口、状态管理和文档。
+- 标出依赖顺序，先做阻塞项。
+- 标出高风险文件和禁止修改区域。
+- 对 300-500 行以上或跨模块修改，规划中间验证点。
+
+### 6. 验收拆分
+
+在 `acceptance-criteria.md` 中拆成三类：
+
+- 机器验证：类型检查、测试、构建、lint、脚本、自检。
+- 行为验证：用户可见结果、交互路径、运行时流程、错误处理、边界条件。
+- 人工验收：视觉、产品判断、业务语义、需要人确认的取舍。
+
+每条验收项必须可判断，避免“优化体验”“尽量接近”这类不可验证表述。
+
+规则：
+
+- build、typecheck、lint 只能放在机器验证，不得覆盖行为验证。
+- 涉及功能行为或核心流程时，必须把功能点拆成可测试项，并按 `functional-verification.md` 生成 `functional-test-plan.md`。
+- 涉及 Electron、Web UI、API、IPC、数据库、模型调用、文件系统或跨项目联调时，必须在行为验证中写清运行时/交互验证路径。
+- 如果无法确认测试工具、调试方法、前端入口、Electron 启动方式或 MCP Playwright 可用性，必须把它列为不确定点并触发 `runtime-verification.md`、`interaction-verification.md` 与 `uncertainty-gates.md`。
+- Electron 交互任务的首选验证方式是 MCP Playwright 或 Playwright；缺少工具时必须询问用户是否接受替代验证或编写测试脚本。
+
+## 复杂度门槛
+
+### Lite
+
+适用于单文件文档、小配置修正、明显拼写或小样式修复。
+
+- `problem-decomposition.md` 可保持简短。
+- 仍必须写用户目标、当前状态、完成标准。
+
+### Standard
+
+适用于普通功能、bugfix、UI 页面、局部重构。
+
+- 必须写完整问题定义、方案选项、工作拆分、验收拆分。
+
+### Strict
+
+适用于认证、权限、数据库、数据迁移、支付、模型调用、生产依赖、复杂并发、核心架构、重大视觉复刻。
+
+- 必须列 2-3 个方案。
+- 必须写回滚或降级策略。
+- 必须列出需要人工确认的 gate。
+
+## 与其他 profile 的关系
+
+- `visual-task-profile.md` 是 `ui-fidelity` 的专项补充，不能替代问题拆解。
+- `research-protocol.md` 是需求或方案不明确时的前置补充，不能替代最终方案选择。
+- `functional-verification.md` 是功能点和核心流程验证补充，必须先于运行时、交互和视觉高层验证。
+- `runtime-verification.md` 是运行时和交互验证补充，不能被 build/typecheck/lint 替代。
+- `interaction-verification.md` 是前端和 Electron 真实交互验证补充，不能被截图或主观观察替代。
+- `git-workflow.md` 负责分支和提交，不负责定义问题。
+- `stage-checklist.md` 规定阶段动作，问题拆解是 planner 阶段的前置产物。
+
+## 状态规则
+
+- 没有 `problem-decomposition.md` 和 `acceptance-criteria.md`，任务不得进入 `coding`。
+- 触发调研但没有 `research-notes.md` 或方案未结合当前项目证据时，任务不得进入 `coding`。
+- 未解决的关键问题存在时，状态应为 `needs_clarification`。
+- 方案未选择时，状态应为 `planned` 或 `blocked_on_decision`，不得开始实现。
+- `uncertainty-gates.md` 触发时，必须先更新 `state.json`、`events.ndjson`、`summary.md` 和 `handoff.md`，再向用户提问。
+- `exec-plan.md` 与问题拆解冲突时，以最新的问题拆解为准，并在 `decision-log.md` 记录原因。

@@ -1,0 +1,9 @@
+{"ts":"2026-04-29","event":"task_created","summary":"创建中文 OCR 支持任务"}
+{"ts":"2026-04-29","event":"evidence_collected","summary":"确认当前 OCR 默认 eng，tesseract 缺少 chi_sim"}
+{"ts":"2026-04-29","event":"implementation_completed","summary":"OCR 默认语言改为 chi_sim+eng，补充缺语言包提示"}
+{"ts":"2026-04-29","event":"validation_passed","summary":"31 个 unittest、评测集、web compile、真实样本 CLI 均通过"}
+{"ts":"2026-04-29","event":"environment_blocked","summary":"brew install tesseract-lang 授权超时，本机仍缺少 chi_sim"}
+{"ts":"2026-04-29","event":"environment_resolved","summary":"用户手动安装 chi_sim.traineddata 后，tesseract --list-langs 已包含 chi_sim"}
+{"ts":"2026-04-29","event":"implementation_completed","summary":"补充 OCR 中文字符空格清洗和带冒号 JD section header 识别"}
+{"ts":"2026-04-29","event":"runtime_validation_passed","summary":"临时中文 JD 截图 OCR smoke 通过，匹配分 78"}
+{"ts":"2026-04-29","event":"validation_passed","summary":"37 个 unittest、评测集、web compile、真实样本 CLI 均通过"}

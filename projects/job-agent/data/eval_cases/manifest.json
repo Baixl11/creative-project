@@ -1,0 +1,26 @@
+[
+  {
+    "id": "high_match",
+    "jd_path": "data/eval_cases/ai_pm_jd.txt",
+    "resume_path": "data/eval_cases/high_match_resume.txt",
+    "expected_min_score": 80,
+    "expected_max_score": 100,
+    "notes": "Strong product, data, stakeholder, experimentation, and AI signals."
+  },
+  {
+    "id": "medium_match",
+    "jd_path": "data/eval_cases/ai_pm_jd.txt",
+    "resume_path": "data/eval_cases/medium_match_resume.txt",
+    "expected_min_score": 45,
+    "expected_max_score": 79,
+    "notes": "Good product operations and stakeholder signals, but AI and experimentation are weaker."
+  },
+  {
+    "id": "low_match",
+    "jd_path": "data/eval_cases/ai_pm_jd.txt",
+    "resume_path": "data/eval_cases/low_match_resume.txt",
+    "expected_min_score": 0,
+    "expected_max_score": 44,
+    "notes": "Useful coordination experience, but limited overlap with AI product management requirements."
+  }
+]

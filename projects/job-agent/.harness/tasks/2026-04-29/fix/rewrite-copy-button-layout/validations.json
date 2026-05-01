@@ -1,0 +1,61 @@
+{
+  "schema_version": "1.0",
+  "status": "passed_with_runtime_note",
+  "commands": [
+    {
+      "command": ".venv/bin/python -m unittest tests.test_web_app",
+      "status": "passed",
+      "summary": "9 Web UI tests passed"
+    },
+    {
+      "command": ".venv/bin/python -m unittest discover -s tests",
+      "status": "passed",
+      "summary": "34 tests passed"
+    },
+    {
+      "command": ".venv/bin/python -m py_compile web_app.py",
+      "status": "passed",
+      "summary": "web_app.py compiled"
+    },
+    {
+      "command": ".venv/bin/python -m app.evaluate --manifest data/eval_cases/manifest.json --output-dir outputs/evaluations",
+      "status": "passed",
+      "summary": "3 evaluation cases passed"
+    },
+    {
+      "command": ".venv/bin/python -m app.main --jd data/my_jd.txt --resume data/my_resume.pdf --output outputs/my_report.md --json-output outputs/my_report.json",
+      "status": "passed",
+      "summary": "Private text/PDF sample passed with score 95"
+    },
+    {
+      "command": ".venv/bin/streamlit run web_app.py --server.headless true --server.port 8506 --browser.gatherUsageStats false",
+      "status": "blocked",
+      "summary": "Local port approval timed out twice"
+    }
+  ],
+  "functional_checks": [
+    {
+      "name": "copy icon appears before text box",
+      "status": "passed"
+    },
+    {
+      "name": "rewrite text is escaped before HTML rendering",
+      "status": "passed"
+    },
+    {
+      "name": "copyable block height grows with text length",
+      "status": "passed"
+    }
+  ],
+  "runtime_checks": [
+    {
+      "name": "Streamlit service healthcheck",
+      "status": "blocked",
+      "summary": "Could not start temporary server because approval timed out"
+    }
+  ],
+  "residual_risks": [
+    "真实浏览器点击复制未自动验证，需要用户打开页面确认。",
+    "最终视觉观感需要用户根据页面截图或本地页面确认。"
+  ]
+}

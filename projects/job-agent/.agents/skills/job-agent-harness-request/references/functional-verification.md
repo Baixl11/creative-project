@@ -1,0 +1,91 @@
+# Functional Verification Protocol
+
+本文件定义进入运行时、交互和视觉验证之前的功能点验证规则。目标是先用成本更低、定位更准的测试覆盖核心逻辑和关键流程，再执行 MCP Playwright 等高层验证，避免把所有问题都留到端到端阶段才发现。
+
+## 核心原则
+
+- 验证顺序必须从低层到高层：功能点拆分测试 -> 核心流程测试 -> 运行时验证 -> MCP Playwright 交互验证 -> 视觉/人工验收。
+- build、typecheck、lint 不是功能验证；它们只能证明静态结构或打包流程。
+- MCP Playwright 是高层真实流程验证，不应替代单元测试、核心逻辑测试、临时脚本 smoke test 或项目原生测试。
+- 如果无法确认核心功能点、测试数据、测试入口或可安全执行的脚本，先触发 `uncertainty-gates.md`。
+
+## Planner 必做
+
+涉及代码行为、核心流程、状态计算、数据转换、API、IPC、表单逻辑、列表筛选、文件读写、模型调用或跨项目联调时，必须创建 `functional-test-plan.md`。
+
+`functional-test-plan.md` 至少包含：
+
+```md
+# Functional Test Plan
+
+## 功能点拆分
+
+| 功能点 | 风险 | 首选测试方式 | 测试数据 | 通过标准 |
+| --- | --- | --- | --- | --- |
+| 表单参数校验 | 错误输入导致流程继续 | 单元测试或临时脚本 | 空名称、超长名称 | 返回明确错误 |
+
+## 核心流程测试
+
+- 核心流程 1：输入 -> 处理 -> 状态更新。
+- 核心流程 2：异常输入 -> 错误提示或降级。
+
+## 测试实现策略
+
+- 项目已有单元测试：优先补充。
+- 项目已有脚本或测试框架：优先复用。
+- 临时小脚本：仅用于任务内验证，必须写明路径、输入、输出和是否保留。
+- 无法自动化的点：写入人工验收边界，不能伪装为已验证。
+
+## 进入高层验证的前置条件
+
+- 所有 blocking/high 风险功能点已有 passed 证据。
+- 失败项已修复并复跑。
+- 未覆盖项有明确原因和残余风险。
+```
+
+## Coder 必做
+
+- 优先让核心逻辑可被低层测试覆盖；必要时提取纯函数或小边界，但不得为了测试大范围重构。
+- 优先新增项目原生单元测试、组件测试、服务测试或现有测试框架用例。
+- 临时小脚本应优先放在任务目录、临时目录或项目已有测试工具允许的位置；如果写入源码树，必须说明是否保留，最终不得留下无意义调试脚本。
+- 每修复一个功能点失败，必须复跑对应低层测试，再进入下一层验证。
+
+## Verifier 必做
+
+验证顺序固定为：
+
+1. 静态命令：build、typecheck、lint、format check。
+2. 功能点测试：单元测试、组件测试、服务测试、临时小脚本、API smoke、IPC smoke。
+3. 核心流程测试：覆盖主要成功路径、关键失败路径和边界输入。
+4. 运行时验证：应用或服务启动、真实入口可达、状态可观察。
+5. 高层交互验证：MCP Playwright 或项目 Playwright 执行真实点击、输入、等待和截图。
+6. 视觉和人工验收：参考图对比、残余取舍和用户确认。
+
+禁止跳级：
+
+- 功能点测试失败时，不得继续执行 MCP Playwright 并把高层验证写成通过。
+- blocking/high 风险功能点没有测试证据时，不得进入 `ready_for_human_review`。
+- 临时脚本只运行一次但没有记录输入、输出和结论时，不得写成 `passed`。
+
+## `validations.json.functional_checks`
+
+功能验证结果必须写入 `validations.json.functional_checks`：
+
+```json
+{
+  "name": "表单参数校验",
+  "kind": "unit_or_temp_script",
+  "command": "node .harness/tasks/2026-04-28/feature/demo/tmp/validate-form.mjs",
+  "status": "passed",
+  "risk": "high",
+  "covers": ["空任务名称", "超长任务名称", "重复提交"],
+  "summary": "核心校验逻辑通过，错误路径返回明确提示",
+  "failure_reason": null
+}
+```
+
+## 状态门禁
+
+- 需要功能验证但缺少 `functional-test-plan.md` 时，任务不得进入 `needs_verification` 之后的状态。
+- `functional_checks` 中存在 failed 的 blocking/high 风险项时，状态必须是 `verification_failed` 并回到 coder。
+- 所有必需功能点验证通过后，才能继续运行 `runtime-test-plan.md` 和 `interaction-test-plan.yaml`。

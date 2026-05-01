@@ -1,0 +1,184 @@
+project:
+  name: "job-agent"
+  kind: "python-ai-service"
+
+harness:
+  request_skill_name: "job-agent-harness-request"
+  branch_pattern: "harness/<type>/<short-slug>"
+  task_path_pattern: ".harness/tasks/<YYYY-MM-DD>/<type>/<short-slug>"
+  default_local_commit: true
+  auto_push: false
+  routing:
+    enabled: true
+    current_task: .harness/current-task.json
+    task_index: .harness/tasks/index.json
+  observability:
+    enabled: true
+    state_entry: state.json
+    event_stream: events.ndjson
+  runtime_verification:
+    enabled: true
+    build_only_is_insufficient_for_behavior: true
+    electron_default_tool: mcp_playwright_or_playwright
+    fallback_policy: "缺少工具或测试方法时暂停确认"
+
+workspace:
+  scan_parent: true
+  scan_roots:
+    - "."
+    - ".."
+  related_project_write_policy: "harnessed_repo_ask_affiliated_repo_allow"
+  edit_boundary_signal: ".harness"
+  same_task_branch_for_affiliated_repos: true
+  related_projects:
+    []
+
+environment:
+  runtime:
+    package_manager: "pip"
+    language_runtimes:
+      - "Python 3.14.4 observed in local .venv"
+    env_files:
+      - ".env"
+      - ".env.example"
+    notes:
+      - "Default mock mode runs without API key."
+      - "Live LLM mode uses OpenAI-compatible chat/completions configuration from .env."
+      - "PDF support requires pypdf; image OCR requires Pillow, pytesseract, and system Tesseract."
+      - "Chinese screenshot OCR needs OCR_LANG and Chinese Tesseract language data; not fully confirmed locally."
+  commands:
+    -
+      name: "install"
+      command: ".venv/bin/python -m pip install -r requirements.txt"
+      category: "setup"
+      working_dir: "."
+      long_running: false
+      purpose: "Install project dependencies for PDF/OCR/Web UI/harness plan validation."
+      evidence: "README.md Quick start and requirements.txt"
+    -
+      name: "unit_tests"
+      command: ".venv/bin/python -m unittest discover -s tests"
+      category: "test"
+      working_dir: "."
+      long_running: false
+      purpose: "Run all unit tests for parsers, matching, Agent workflow, Web UI helpers, and evaluation helpers."
+      evidence: "README.md Run the baseline tests"
+    -
+      name: "evaluation_suite"
+      command: ".venv/bin/python -m app.evaluate --manifest data/eval_cases/manifest.json --output-dir outputs/evaluations"
+      category: "evaluation"
+      working_dir: "."
+      long_running: false
+      purpose: "Run high/medium/low match regression cases and write evaluation summaries."
+      evidence: "README.md Run the evaluation suite"
+    -
+      name: "real_sample_cli"
+      command: ".venv/bin/python -m app.main --jd data/my_jd.txt --resume data/my_resume.pdf --output outputs/my_report.md --json-output outputs/my_report.json"
+      category: "runtime"
+      working_dir: "."
+      long_running: false
+      purpose: "Run the current private Chinese JD/PDF resume sample locally."
+      evidence: "DEMO_GUIDE.md and prior validated CLI runs"
+    -
+      name: "web_compile"
+      command: ".venv/bin/python -m py_compile web_app.py"
+      category: "static"
+      working_dir: "."
+      long_running: false
+      purpose: "Check Streamlit Web UI syntax/import validity."
+      evidence: "validated local smoke checks"
+    -
+      name: "web_dev"
+      command: ".venv/bin/streamlit run web_app.py"
+      category: "dev"
+      working_dir: "."
+      long_running: true
+      purpose: "Launch the local Streamlit Web UI."
+      evidence: "README.md and WEB_DEMO.md"
+    -
+      name: "web_smoke"
+      command: "curl -I http://localhost:8501"
+      category: "runtime"
+      working_dir: "."
+      long_running: false
+      purpose: "Check that Streamlit returns HTTP 200 after web_dev starts."
+      evidence: "prior local smoke verification"
+  frontend:
+    kind: "streamlit"
+    primary_entry: "web_app.py"
+    dev_server_url: "http://localhost:8501"
+    electron_command: ""
+    healthcheck:
+      type: "url"
+      target: "http://localhost:8501"
+    viewports:
+      -
+        name: "desktop_demo"
+        width: 1440
+        height: 1000
+        device_scale_factor: 1
+        zoom_factor: 1
+    fallback_viewports:
+      -
+        name: "laptop"
+        width: 1366
+        height: 768
+        device_scale_factor: 1
+        zoom_factor: 1
+      -
+        name: "narrow"
+        width: 390
+        height: 844
+        device_scale_factor: 2
+        zoom_factor: 1
+  mcp_playwright:
+    required_for_ui: true
+    availability: "unknown"
+    fallback_policy: "For formal UI behavior or visual tasks, create interaction-test-plan.yaml and pause for user confirmation if MCP Playwright/browser automation is unavailable; curl-only checks prove service reachability but not interaction behavior."
+  unresolved:
+    - "MCP Playwright availability is not proven in this project bootstrap; current verification used Streamlit launch plus curl healthcheck."
+    - "Chinese OCR language data remains environment-dependent and should be confirmed before OCR-focused tasks."
+
+paths:
+  source:
+    - "app/"
+    - "tests/"
+    - "web_app.py"
+    - "start_web.command"
+    - "data/eval_cases/"
+  generated:
+    - "outputs/"
+    - "outputs/web/"
+    - "__pycache__/"
+    - ".pytest_cache/"
+  forbidden_to_edit:
+    - ".venv/"
+    - ".env"
+    - "outputs/"
+    - "__pycache__/"
+    - "data/my_*"
+
+sensors:
+  native:
+    - name: "unit_tests"
+      command: ".venv/bin/python -m unittest discover -s tests"
+      purpose: "Run all project unit tests."
+    - name: "evaluation_suite"
+      command: ".venv/bin/python -m app.evaluate --manifest data/eval_cases/manifest.json --output-dir outputs/evaluations"
+      purpose: "Run high/medium/low match regression checks."
+    - name: "web_compile"
+      command: ".venv/bin/python -m py_compile web_app.py"
+      purpose: "Check Streamlit app syntax."
+    - name: "real_sample_cli"
+      command: ".venv/bin/python -m app.main --jd data/my_jd.txt --resume data/my_resume.pdf --output outputs/my_report.md --json-output outputs/my_report.json"
+      purpose: "Run private real JD/PDF resume sample locally."
+
+human_gates:
+  uncertainty_gate:
+    enabled: true
+    max_questions: 3
+    pause_on_high_impact_unknowns: true
+  require_approval_for:
+    - "database migration"
+    - "new production dependency"
+    - "secret or credential handling"

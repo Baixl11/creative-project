@@ -1,0 +1,187 @@
+{
+  "project": {
+    "name": "demo-electron",
+    "kind": "electron-vite",
+    "confidence": "high",
+    "summary": "Electron + Vite 桌面应用示例"
+  },
+  "bootstrap": {
+    "mode": "standard",
+    "request_skill_name": "demo-electron-harness-request",
+    "allow_overwrite": false
+  },
+  "git": {
+    "branch_pattern": "harness/<type>/<short-slug>",
+    "task_path_pattern": ".harness/tasks/<YYYY-MM-DD>/<type>/<short-slug>",
+    "auto_push": false
+  },
+  "paths": {
+    "source": [
+      "src/",
+      "electron/"
+    ],
+    "generated": [
+      "dist/",
+      "release/"
+    ],
+    "forbidden_to_edit": [
+      "node_modules/",
+      "dist/"
+    ]
+  },
+  "workspace": {
+    "root": ".",
+    "target_project": ".",
+    "related_projects": [
+      {
+        "name": "demo-shared-ui",
+        "path": "../demo-shared-ui",
+        "role": "本地共享组件库示例",
+        "evidence": "示例：dev/build 命令可能依赖本地共享组件库",
+        "harness_status": "absent",
+        "write_policy": "allowed_by_default",
+        "branch_policy": "same_task_branch",
+        "commands": [
+          "pnpm --dir ../demo-shared-ui build"
+        ]
+      }
+    ],
+    "command_graph": [
+      {
+        "command": "pnpm dev",
+        "evidence": "示例跨项目开发命令",
+        "touches": [
+          ".",
+          "../demo-shared-ui"
+        ]
+      }
+    ],
+    "unresolved": [
+      "示例 related project 未实际读取，仅用于验证多仓库模板渲染"
+    ]
+  },
+  "environment": {
+    "runtime": {
+      "package_manager": "pnpm",
+      "language_runtimes": [
+        "Node.js >= 20"
+      ],
+      "env_files": [
+        ".env",
+        ".env.local"
+      ],
+      "notes": [
+        "Electron 调试需要桌面运行环境"
+      ]
+    },
+    "commands": [
+      {
+        "name": "dev",
+        "command": "pnpm dev",
+        "category": "dev",
+        "working_dir": ".",
+        "long_running": true,
+        "purpose": "启动 Electron/Vite 开发环境",
+        "evidence": "package.json scripts.dev"
+      },
+      {
+        "name": "typecheck",
+        "command": "pnpm exec tsc --noEmit",
+        "category": "typecheck",
+        "working_dir": ".",
+        "long_running": false,
+        "purpose": "检查 TypeScript 类型",
+        "evidence": "示例 native sensor"
+      }
+    ],
+    "frontend": {
+      "kind": "electron-vite",
+      "primary_entry": "electron",
+      "dev_server_url": "http://localhost:5173",
+      "electron_command": "pnpm dev",
+      "healthcheck": {
+        "type": "url",
+        "target": "http://localhost:5173"
+      },
+      "viewports": [
+        {
+          "name": "target",
+          "width": 2048,
+          "height": 1152,
+          "device_scale_factor": 1,
+          "zoom_factor": 1
+        }
+      ],
+      "fallback_viewports": [
+        {
+          "name": "narrow",
+          "width": 1366,
+          "height": 768,
+          "device_scale_factor": 1,
+          "zoom_factor": 1
+        }
+      ]
+    },
+    "mcp_playwright": {
+      "required_for_ui": true,
+      "availability": "unknown",
+      "fallback_policy": "缺少 MCP Playwright、启动方式或测试数据时暂停确认"
+    },
+    "unresolved": [
+      "待确认：MCP Playwright 在当前 Codex 环境中是否可用"
+    ]
+  },
+  "sensors": {
+    "native": [
+      {
+        "name": "typecheck",
+        "command": "pnpm exec tsc --noEmit",
+        "purpose": "检查 TypeScript 类型"
+      }
+    ],
+    "harness": [
+      {
+        "name": "harness_self_check",
+        "command": "人工检查 docs/generated/HARNESS_SELF_CHECK.md",
+        "purpose": "检查 harness 结构和任务文件契约"
+      }
+    ],
+    "future": [
+      {
+        "name": "e2e",
+        "command": "待确认",
+        "purpose": "补充桌面端关键路径回归"
+      }
+    ]
+  },
+  "architecture": {
+    "top_level_map": [
+      "`src/`：前端源码",
+      "`electron/`：桌面主进程与系统能力边界"
+    ],
+    "domain_boundaries": [
+      "渲染进程不得直接访问文件系统",
+      "IPC 接口必须先经过白名单校验"
+    ],
+    "forbidden_rules": [
+      "不得修改生成物目录",
+      "不得提交本地密钥或用户数据"
+    ],
+    "generated_paths": [
+      "dist/",
+      "release/"
+    ]
+  },
+  "docs": {
+    "detection_evidence": [
+      "发现 package.json",
+      "发现 electron 目录"
+    ],
+    "assumptions": [
+      "默认使用 pnpm 作为包管理器"
+    ],
+    "skipped_items": [
+      "未运行 E2E，当前示例没有浏览器运行环境"
+    ]
+  }
+}

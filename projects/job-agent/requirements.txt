@@ -1,0 +1,7 @@
+# Core project tests still use only the Python standard library.
+# These optional packages enable real-world input formats.
+pypdf>=5.0.0
+Pillow>=10.0.0
+pytesseract>=0.3.13
+streamlit>=1.41.0
+PyYAML>=6.0.0

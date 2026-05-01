@@ -1,0 +1,26 @@
+task_key: "2026-05-01/chore/github-monorepo-sync"
+parent_task: null
+related_tasks:
+  - "2026-04-29/docs/project-delivery-refresh"
+type: "chore"
+slug: "github-monorepo-sync"
+title: "同步项目到 GitHub monorepo"
+status: "planned"
+goal: "把当前 Job Agent 项目同步到 creative-project 仓库的独立项目目录，并保留未来多项目扩展空间。"
+branch: "harness/chore/github-monorepo-sync"
+remote: "git@github.com:Baixl11/creative-project.git"
+target_layout: "projects/job-agent/"
+constraints:
+  - "不得提交 .env、.venv、真实个人数据和临时 outputs。"
+  - "不得破坏远端仓库已有内容。"
+  - "当前项目目录不是 git 仓库，同步在临时克隆目录中完成。"
+verification_commands:
+  - ".venv/bin/python -m unittest discover -s tests"
+  - ".venv/bin/python -m app.evaluate --manifest data/eval_cases/manifest.json --output-dir outputs/evaluations"
+  - ".venv/bin/python -m py_compile web_app.py"
+git_strategy:
+  source_repo_is_git: false
+  staging_repo: "/private/tmp/creative-project-sync"
+  commit_policy: "只提交 monorepo 根 README、projects/job-agent/ 项目文件和必要忽略规则。"
+  push_policy: "用户已明确要求同步到 GitHub，可在敏感文件检查通过后 push。"
+

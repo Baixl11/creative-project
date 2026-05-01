@@ -1,0 +1,204 @@
+{
+  "version": "0.1.0",
+  "entry": {
+    "mode": "codex_skill_conversation",
+    "projectSkill": ".agents/skills/job-agent-harness-request",
+    "sharedContextRoot": ".harness/tasks",
+    "taskPathPattern": ".harness/tasks/<YYYY-MM-DD>/<type>/<short-slug>",
+    "environment": ".harness/environment.yaml",
+    "workspaceMap": ".harness/workspace-map.yaml"
+  },
+  "workflow": {
+    "orchestrator": "current_codex_session",
+    "bootstrapMode": "standard",
+    "stageOrder": ["planner", "coder", "verifier", "doc_gardener"],
+    "taskCreation": "skill_template",
+    "taskRouting": {
+      "reference": ".agents/skills/job-agent-harness-request/references/task-routing.md",
+      "currentTask": ".harness/current-task.json",
+      "taskIndex": ".harness/tasks/index.json",
+      "routeBeforeCreate": true,
+      "supportedIntents": [
+        "new_request",
+        "continue_previous",
+        "continue_named_task",
+        "acceptance_feedback"
+      ],
+      "ambiguityPolicy": "ask_one_confirmation_question"
+    },
+    "workspaceDiscovery": {
+      "workspaceMap": ".harness/workspace-map.yaml",
+      "root": ".",
+      "targetProject": ".",
+      "relatedProjects": [],
+      "commandGraph": [
+      {
+            "command": ".venv/bin/python -m unittest discover -s tests",
+            "evidence": "README.md Run the baseline tests",
+            "touches": [
+                  "."
+            ]
+      },
+      {
+            "command": ".venv/bin/python -m app.evaluate --manifest data/eval_cases/manifest.json --output-dir outputs/evaluations",
+            "evidence": "README.md Run the evaluation suite",
+            "touches": [
+                  ".",
+                  "outputs/evaluations/"
+            ]
+      },
+      {
+            "command": ".venv/bin/python -m app.main --jd data/sample_jd.txt --resume data/sample_resume.txt --output outputs/report.md --json-output outputs/report.json",
+            "evidence": "README.md Quick start",
+            "touches": [
+                  ".",
+                  "outputs/"
+            ]
+      },
+      {
+            "command": ".venv/bin/streamlit run web_app.py",
+            "evidence": "README.md and WEB_DEMO.md local Web UI launch command",
+            "touches": [
+                  ".",
+                  "outputs/web/"
+            ]
+      }
+],
+      "readRelatedProjectsWhenCommandsReferenceThem": true,
+      "editBoundarySignal": ".harness directory",
+      "harnessedRelatedProjectPolicy": "ask_before_write",
+      "affiliatedSubrepoPolicy": "allowed_by_default",
+      "sameTaskBranchForAffiliatedSubrepos": true
+    },
+    "problemDecomposition": {
+      "reference": ".agents/skills/job-agent-harness-request/references/problem-decomposition.md",
+      "requiredBeforeCoding": true,
+      "requiredArtifacts": [
+        "problem-decomposition.md",
+        "acceptance-criteria.md"
+      ],
+      "readyGate": "problem definition, selected solution, work breakdown, and acceptance split are complete"
+    },
+    "researchProtocol": {
+      "reference": ".agents/skills/job-agent-harness-request/references/research-protocol.md",
+      "requiredWhenUnclear": true,
+      "artifact": "research-notes.md",
+      "readyGate": "unclear requirements or uncertain solutions have local evidence, optional external sources, project-fit analysis, and selected approach recorded"
+    },
+    "runtimeVerification": {
+      "reference": ".agents/skills/job-agent-harness-request/references/runtime-verification.md",
+      "requiredWhenBehaviorChanges": true,
+      "artifact": "runtime-test-plan.md",
+      "buildOnlyIsInsufficientForBehavior": true,
+      "electronDefaultTool": "mcp_playwright_or_playwright",
+      "fallbackPolicy": "ask_user_before_manual_checks_or_project_native_test_scripts"
+    },
+    "functionalVerification": {
+      "reference": ".agents/skills/job-agent-harness-request/references/functional-verification.md",
+      "requiredWhenBehaviorOrCoreFlowChanges": true,
+      "artifact": "functional-test-plan.md",
+      "requiredBeforeRuntime": true,
+      "hardGate": "functional_checks for blocking/high feature points must pass before runtime, interaction, or human review"
+    },
+    "interactionVerification": {
+      "reference": ".agents/skills/job-agent-harness-request/references/interaction-verification.md",
+      "environment": ".harness/environment.yaml",
+      "requiredForFrontendBehavior": true,
+      "artifact": "interaction-test-plan.yaml",
+      "preferredTool": "mcp_playwright",
+      "hardGate": "interaction evidence or user-confirmed fallback is required before human review"
+    },
+    "uncertaintyGates": {
+      "reference": ".agents/skills/job-agent-harness-request/references/uncertainty-gates.md",
+      "pauseOnHighImpactUnknowns": true,
+      "blockedStatuses": ["needs_clarification", "blocked_on_decision"],
+      "maxQuestions": 3,
+      "appliesTo": [
+        "initialization_analysis",
+        "requirement_analysis",
+        "problem_decomposition",
+        "environment_configuration",
+        "verification_selection",
+        "data_security_dependency_git_decisions",
+        "visual_acceptance"
+      ]
+    },
+    "observability": {
+      "reference": ".agents/skills/job-agent-harness-request/references/task-observability.md",
+      "stateEntry": "state.json",
+      "eventStream": "events.ndjson",
+      "machineArtifacts": [
+        "summary.md",
+        "state.json",
+        "events.ndjson",
+        "agents.json",
+        "artifacts.json",
+        "validations.json"
+      ],
+      "publicOnly": true
+    },
+    "conditionalProfiles": {
+      "screenshotUi": {
+        "reference": ".agents/skills/job-agent-harness-request/references/visual-task-profile.md",
+        "requiredArtifacts": [
+          "visual-spec.md",
+          "visual-checklist.md",
+          "visual-review.md",
+          "visual-defects.md",
+          "snapshots/"
+        ],
+        "requiredLoop": "screenshot, region diff, defect logging, repair, re-screenshot, recheck",
+        "scaleRequired": true,
+        "readyGate": "reference-vs-actual review completed, scaling checked, and no open blocking or major visual defects"
+      }
+    },
+    "subagents": "disabled_by_default",
+    "gitLifecycle": {
+      "enabledWhenGitRepo": true,
+      "branchPattern": "harness/<type>/<short-slug>",
+      "createOrSwitchBeforeCoding": true,
+      "sameBranchForEditableAffiliatedSubrepos": true,
+      "commitPolicy": "commit after safe module, risk-boundary, or 300-500 line change boundaries",
+      "pushPolicy": "never_without_explicit_user_request"
+    }
+  },
+  "sensors": {
+    "harness": [
+    {
+        "name": "bootstrap_plan_validate",
+        "command": ".venv/bin/python .agents/skills/harness-project-bootstrap/scripts/validate_plan.py --plan .harness/bootstrap-plan.yaml --target .",
+        "purpose": "Validate bootstrap plan and template mapping."
+    }
+],
+    "native": [
+    {
+        "name": "unit_tests",
+        "command": ".venv/bin/python -m unittest discover -s tests",
+        "purpose": "Run all project unit tests."
+    },
+    {
+        "name": "evaluation_suite",
+        "command": ".venv/bin/python -m app.evaluate --manifest data/eval_cases/manifest.json --output-dir outputs/evaluations",
+        "purpose": "Run high/medium/low match regression checks."
+    },
+    {
+        "name": "web_compile",
+        "command": ".venv/bin/python -m py_compile web_app.py",
+        "purpose": "Check Streamlit app syntax."
+    },
+    {
+        "name": "real_sample_cli",
+        "command": ".venv/bin/python -m app.main --jd data/my_jd.txt --resume data/my_resume.pdf --output outputs/my_report.md --json-output outputs/my_report.json",
+        "purpose": "Run private real JD/PDF resume sample locally."
+    }
+]
+  },
+  "snapshotIgnore": [
+    "outputs/",
+    "outputs/web/",
+    "__pycache__/",
+    ".pytest_cache/",
+    "node_modules",
+    ".git"
+]
+}

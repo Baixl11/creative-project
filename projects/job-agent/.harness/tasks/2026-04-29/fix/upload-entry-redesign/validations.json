@@ -1,0 +1,52 @@
+{
+  "schema_version": "1.0",
+  "status": "passed_with_runtime_note",
+  "commands": [
+    {
+      "command": ".venv/bin/python -m unittest tests.test_web_app",
+      "status": "passed",
+      "summary": "12 Web UI tests passed"
+    },
+    {
+      "command": ".venv/bin/python -m unittest discover -s tests",
+      "status": "passed",
+      "summary": "40 tests passed"
+    },
+    {
+      "command": ".venv/bin/python -m py_compile web_app.py",
+      "status": "passed",
+      "summary": "web_app.py compiled"
+    },
+    {
+      "command": ".venv/bin/python -m app.evaluate --manifest data/eval_cases/manifest.json --output-dir outputs/evaluations",
+      "status": "passed",
+      "summary": "3 evaluation cases passed"
+    },
+    {
+      "command": ".venv/bin/streamlit run web_app.py --server.headless true --server.port 8507 --browser.gatherUsageStats false",
+      "status": "blocked",
+      "summary": "Local port approval timed out"
+    }
+  ],
+  "functional_checks": [
+    {
+      "name": "upload field labels show lightweight Chinese format summary",
+      "status": "passed"
+    },
+    {
+      "name": "default Streamlit uploader format hint is hidden",
+      "status": "passed"
+    }
+  ],
+  "runtime_checks": [
+    {
+      "name": "Streamlit service healthcheck",
+      "status": "blocked",
+      "summary": "Could not start temporary server because approval timed out"
+    }
+  ],
+  "residual_risks": [
+    "上传区最终视觉需要用户刷新页面人工确认。",
+    "Streamlit 内部 DOM 变化可能影响 file uploader CSS，后续升级 Streamlit 时需要复查。"
+  ]
+}

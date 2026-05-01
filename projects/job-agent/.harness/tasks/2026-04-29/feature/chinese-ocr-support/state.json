@@ -1,0 +1,9 @@
+{
+  "schema_version": "1.0",
+  "task_key": "2026-04-29/feature/chinese-ocr-support",
+  "title": "补齐中文 OCR 支持",
+  "status": "ready_for_human_review",
+  "stage": "verifier",
+  "updated_at": "2026-04-29",
+  "summary": "chi_sim 已安装，OCR 空格清洗已补齐；临时中文 JD 截图 smoke 通过，37 个测试通过，待用户用真实截图人工确认。"
+}

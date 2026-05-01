@@ -1,0 +1,34 @@
+task_key: "2026-04-29/fix/rewrite-copy-button-layout"
+parent_task: null
+related_tasks:
+  - "2026-04-29/feature/chinese-ocr-support"
+route_reason: "new_request"
+branch: "harness/fix/rewrite-copy-button-layout"
+created_at: "2026-04-29"
+title: "调整简历改写复制按钮布局"
+status: "planned"
+goal: "让简历改写建议的复制按钮不遮挡文本，将复制 icon 放到文本框外侧。"
+context: "当前 Web UI 在简历改写页签使用 st.code 展示 rewrite_bullet，Streamlit 内置复制按钮会覆盖代码框右上角。"
+constraints:
+  - "遵守 AGENTS.md 与 ARCHITECTURE.md"
+  - "不改 Agent 核心匹配逻辑"
+  - "保持本地 Streamlit 可运行"
+done_when:
+  - "建议写法文本框内不再出现遮挡文本的内置复制按钮"
+  - "复制操作以文本框外侧 SVG icon 按钮呈现"
+  - "测试和 Web 编译通过"
+read_first:
+  - "web_app.py"
+  - "tests/test_web_app.py"
+verification_commands:
+  - ".venv/bin/python -m unittest discover -s tests"
+  - ".venv/bin/python -m py_compile web_app.py"
+  - ".venv/bin/python -m app.evaluate --manifest data/eval_cases/manifest.json --output-dir outputs/evaluations"
+git_strategy:
+  branch: "harness/fix/rewrite-copy-button-layout"
+  create_or_switch_before_coding: false
+  commit_policy: "当前目录不是 git 仓库，本任务不创建分支或提交"
+  push_policy: "不自动 push"
+related_project_edit_scope: []
+assumptions:
+  - "用户说的复制按钮是 Streamlit st.code 代码块自带的复制按钮。"

@@ -1,0 +1,17 @@
+Senior Product Manager, AI Productivity Tools
+
+We are hiring a product manager to lead AI assistant features for a productivity product.
+
+Responsibilities
+- Translate user research into product requirements and roadmaps.
+- Partner with design, engineering, and data teams to ship experiments.
+- Define metrics for activation, retention, and feature adoption.
+- Work with LLM-powered product features and evaluate quality.
+- Communicate priorities to cross-functional stakeholders.
+
+Requirements
+- 3+ years of product management experience.
+- Experience with experimentation, analytics, and SQL or dashboard tools.
+- Strong written communication and stakeholder management.
+- Comfort working with AI products or automation workflows.
+- Ability to turn ambiguous problems into simple product plans.

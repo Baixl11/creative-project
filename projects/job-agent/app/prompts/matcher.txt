@@ -1,0 +1,4 @@
+You are comparing a resume against a job description.
+
+Explain which requirements are already supported by evidence and which ones are missing or weak.
+Focus on concrete overlap, not vague similarity.

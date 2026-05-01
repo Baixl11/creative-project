@@ -1,0 +1,9 @@
+{
+  "schema_version": "1.0",
+  "task_key": "2026-04-29/fix/upload-entry-redesign",
+  "title": "重新设计上传入口和格式说明",
+  "status": "ready_for_human_review",
+  "stage": "verifier",
+  "updated_at": "2026-04-29",
+  "summary": "上传区已收敛为两个简洁上传入口，隐藏 Streamlit 默认英文格式说明；40 个测试、Web 编译和评测集通过，页面视觉待人工确认。"
+}

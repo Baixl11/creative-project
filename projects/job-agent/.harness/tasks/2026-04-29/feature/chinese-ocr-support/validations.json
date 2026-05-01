@@ -1,0 +1,84 @@
+{
+  "schema_version": "1.0",
+  "status": "passed_with_manual_quality_risk",
+  "commands": [
+    {
+      "command": ".venv/bin/python -m unittest tests.test_input_reader",
+      "status": "passed",
+      "summary": "7 tests passed"
+    },
+    {
+      "command": ".venv/bin/python -m unittest discover -s tests",
+      "status": "passed",
+      "summary": "37 tests passed"
+    },
+    {
+      "command": ".venv/bin/python -m py_compile web_app.py",
+      "status": "passed",
+      "summary": "Streamlit app compiled"
+    },
+    {
+      "command": ".venv/bin/python -m app.evaluate --manifest data/eval_cases/manifest.json --output-dir outputs/evaluations",
+      "status": "passed",
+      "summary": "3 evaluation cases passed"
+    },
+    {
+      "command": ".venv/bin/python -m app.main --jd data/my_jd.txt --resume data/my_resume.pdf --output outputs/my_report.md --json-output outputs/my_report.json",
+      "status": "passed",
+      "summary": "Private text/PDF sample passed with score 95"
+    },
+    {
+      "command": "tesseract --list-langs",
+      "status": "passed",
+      "summary": "Tesseract available and chi_sim is installed"
+    },
+    {
+      "command": "brew install tesseract-lang",
+      "status": "superseded",
+      "summary": "User manually installed chi_sim.traineddata"
+    },
+    {
+      "command": ".venv/bin/python -m app.main --jd /private/tmp/job_agent_chinese_jd.png --resume data/my_resume.pdf --output outputs/ocr_chinese_smoke.md --json-output outputs/ocr_chinese_smoke.json",
+      "status": "passed",
+      "summary": "Temporary Chinese JD screenshot OCR smoke passed with score 78"
+    }
+  ],
+  "functional_checks": [
+    {
+      "name": "default Chinese OCR language",
+      "status": "passed"
+    },
+    {
+      "name": "OCR_LANG override",
+      "status": "passed"
+    },
+    {
+      "name": "missing chi_sim user-facing error",
+      "status": "passed"
+    },
+    {
+      "name": "OCR Chinese spacing cleanup",
+      "status": "passed"
+    },
+    {
+      "name": "JD section header with colon after OCR cleanup",
+      "status": "passed"
+    }
+  ],
+  "runtime_checks": [
+    {
+      "name": "local tesseract language detection",
+      "status": "passed",
+      "summary": "chi_sim/eng/osd/snum available"
+    },
+    {
+      "name": "temporary Chinese JD screenshot OCR smoke",
+      "status": "passed",
+      "summary": "Job title recognized as 智能化产品经理 (G 端), score 78"
+    }
+  ],
+  "residual_risks": [
+    "真实用户截图清晰度、字体和排版仍会影响 Tesseract 识别质量。",
+    "OCR 可能把 AI/G端 等短领域词识别错，后续可加截图预处理或领域词纠错。"
+  ]
+}

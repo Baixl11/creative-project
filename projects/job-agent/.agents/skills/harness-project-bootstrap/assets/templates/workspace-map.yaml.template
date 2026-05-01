@@ -1,0 +1,17 @@
+workspace:
+  root: "{{WORKSPACE_ROOT}}"
+  target_project: "{{WORKSPACE_TARGET_PROJECT}}"
+  discovery_policy:
+    read_parent_and_related_projects: true
+    related_project_write_policy: "目录存在 .harness 时视为独立 harness 项目，默认只读且写入需用户确认；目录没有 .harness 时视为当前主 harness 的附属仓库，默认允许在同一任务内编辑"
+    same_task_branch_for_affiliated_repos: true
+    unresolved_cross_project_edges_require_clarification: true
+
+related_projects:
+{{RELATED_PROJECTS_YAML}}
+
+command_graph:
+{{COMMAND_GRAPH_YAML}}
+
+unresolved:
+{{WORKSPACE_UNRESOLVED_YAML}}
