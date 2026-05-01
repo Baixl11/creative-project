@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "status": "passed_before_remote_push",
+  "status": "passed_and_pushed",
   "commands": [
     {
       "command": ".venv/bin/python -m unittest discover -s tests",
@@ -41,7 +41,7 @@
     }
   ],
   "residual_risks": [
-    "Remote push still depends on GitHub SSH permission and network availability.",
+    "GitHub commit author currently uses the local machine identity Cyan <cyan@CyandeMacBook-Air.local>; future commits can be configured with a public portfolio email if desired.",
     "GitHub page structure should be visually checked by the user after push."
   ]
 }

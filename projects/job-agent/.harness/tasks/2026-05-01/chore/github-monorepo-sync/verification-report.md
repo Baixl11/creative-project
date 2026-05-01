@@ -17,6 +17,10 @@
 
 ## 待完成
 
-- 提交并 push 到 `git@github.com:Baixl11/creative-project.git`。
 - push 后由用户打开 GitHub 页面确认目录结构。
 
+## GitHub 结果
+
+- 已提交：`27bb648 Add Job Agent portfolio project`。
+- 已推送：`main -> git@github.com:Baixl11/creative-project.git`。
+- 已确认：远端 `refs/heads/main` 指向 `27bb648c0151fdf3d68a9ee611e3c0e0168470a7`。
