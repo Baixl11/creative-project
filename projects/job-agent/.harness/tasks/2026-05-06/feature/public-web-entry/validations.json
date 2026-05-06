@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "status": "passed_ready_to_push",
+  "status": "passed_and_pushed",
   "commands": [
     {
       "command": ".venv/bin/python -m unittest discover -s tests",
@@ -65,7 +65,7 @@
     }
   ],
   "residual_risks": [
-    "GitHub push is still pending until the commit is created and pushed.",
+    "GitHub commit author currently uses the local machine identity Cyan <cyan@CyandeMacBook-Air.local>; future commits can be configured with a public portfolio email if desired.",
     "Final Streamlit Cloud URL requires user account authorization and app creation.",
     "Cloud OCR package installation and real screenshot OCR quality require post-deploy confirmation."
   ]

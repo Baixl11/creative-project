@@ -17,9 +17,10 @@
 
 - 初版 `.streamlit/config.toml` 同时设置 `enableCORS=false` 和 `enableXsrfProtection=true`，Streamlit 提示二者不兼容。已删除 `enableCORS=false`，保留 XSRF 保护。
 
-## 当前待完成
+## GitHub 结果
 
-- 创建 Git commit 并 push 到 GitHub。
+- 主体提交：`9283a38 Prepare Job Agent web deployment`。
+- 已推送：`main -> git@github.com:Baixl11/creative-project.git`。
 
 ## 残余风险
 

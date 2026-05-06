@@ -2,8 +2,8 @@
   "schema_version": "1.0",
   "task_key": "2026-05-06/feature/public-web-entry",
   "title": "配置公网网页即点即用入口",
-  "status": "ready_to_push",
+  "status": "ready_for_human_review",
   "branch": "harness/feature/public-web-entry",
   "updated_at": "2026-05-06",
-  "summary": "网页入口部署适配和 monorepo 运行验证已通过，准备提交并 push 到 GitHub。"
+  "summary": "网页入口部署适配、monorepo 验证和 GitHub push 已完成；等待用户在 Streamlit Cloud 创建网页应用。"
 }
