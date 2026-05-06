@@ -1,0 +1,72 @@
+{
+  "schema_version": "1.0",
+  "status": "passed_ready_to_push",
+  "commands": [
+    {
+      "command": ".venv/bin/python -m unittest discover -s tests",
+      "status": "passed",
+      "summary": "43 tests passed in source project"
+    },
+    {
+      "command": ".venv/bin/python -m py_compile web_app.py",
+      "status": "passed",
+      "summary": "Streamlit entry compiled"
+    },
+    {
+      "command": ".venv/bin/python .agents/skills/harness-project-bootstrap/scripts/validate_plan.py --plan .harness/bootstrap-plan.yaml --target .",
+      "status": "passed",
+      "summary": "Bootstrap plan valid; 36 templates mapped"
+    },
+    {
+      "command": ".venv/bin/python -m app.evaluate --manifest data/eval_cases/manifest.json --output-dir outputs/evaluations",
+      "status": "passed",
+      "summary": "3 evaluation cases passed"
+    },
+    {
+      "command": ".venv/bin/python -m app.main --jd data/demo_jd_cn.txt --resume data/demo_resume_cn.txt --output outputs/demo_cn_report.md --json-output outputs/demo_cn_report.json",
+      "status": "passed",
+      "summary": "Public Chinese demo produced score 95 in mock mode"
+    },
+    {
+      "command": ".venv/bin/python -m app.main --jd data/my_jd.txt --resume data/my_resume.pdf --output outputs/my_report.md --json-output outputs/my_report.json",
+      "status": "passed",
+      "summary": "Private local sample produced score 95 in mock mode"
+    }
+  ],
+  "functional_checks": [
+    {
+      "name": "project_root_paths",
+      "status": "passed",
+      "summary": "web_app imports from a monorepo root and resolves PROJECT_ROOT to projects/job-agent"
+    },
+    {
+      "name": "public_demo_fallback",
+      "status": "passed",
+      "summary": "demo_jd_cn.txt exists in monorepo stage and is reachable through _project_path"
+    }
+  ],
+  "runtime_checks": [
+    {
+      "name": "monorepo_module_import",
+      "status": "passed",
+      "summary": "Loaded projects/job-agent/web_app.py from monorepo root and confirmed data/output paths"
+    },
+    {
+      "name": "streamlit_server_start",
+      "status": "passed",
+      "summary": "Streamlit started from monorepo root with projects/job-agent/web_app.py on port 8511"
+    }
+  ],
+  "interaction_checks": [
+    {
+      "name": "http_smoke",
+      "status": "passed",
+      "summary": "curl -I http://localhost:8511 returned HTTP/1.1 200 OK"
+    }
+  ],
+  "residual_risks": [
+    "GitHub push is still pending until the commit is created and pushed.",
+    "Final Streamlit Cloud URL requires user account authorization and app creation.",
+    "Cloud OCR package installation and real screenshot OCR quality require post-deploy confirmation."
+  ]
+}

@@ -30,6 +30,19 @@ creative-project/
 - `projects/job-agent/`：完整 Python AI Agent 项目，包含 CLI、Streamlit Web UI、PDF/OCR 输入、中文匹配、评测集和自动化测试。
 - `projects/job-agent/PORTFOLIO_CASE_STUDY.md`：作品集页面稿。
 - `projects/job-agent/docs/portfolio/job_agent_case_study.pdf`：项目整体介绍 PDF。
+- Streamlit Cloud 网页入口配置：`projects/job-agent/web_app.py`。
+
+## Web 部署
+
+如果要把 Job Agent 部署成即点即用网页，在 Streamlit Community Cloud 中填写：
+
+```text
+Repository: Baixl11/creative-project
+Branch: main
+Main file path: projects/job-agent/web_app.py
+```
+
+部署细节见 `projects/job-agent/DEPLOYMENT.md`。
 
 ## 隐私与安全
 

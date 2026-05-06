@@ -1,0 +1,8 @@
+{"ts":"2026-05-06","event":"task_created","summary":"创建公网网页入口任务"}
+{"ts":"2026-05-06","event":"planning_completed","summary":"选择 Streamlit Community Cloud 部署就绪方案"}
+{"ts":"2026-05-06","event":"implementation_started","summary":"开始修改 Web UI 路径、部署配置和文档"}
+{"ts":"2026-05-06","event":"implementation_completed","summary":"完成项目根路径 helper、部署配置和部署文档初稿"}
+{"ts":"2026-05-06","event":"validation_passed","summary":"源项目测试、评测、编译、公开 demo、私有样例和 monorepo 模块加载验证通过"}
+{"ts":"2026-05-06","event":"remote_sync_blocked","summary":"git clone/push 需要网络权限；审批连续超时，远端同步暂未完成"}
+{"ts":"2026-05-06","event":"remote_sync_resumed","summary":"用户确认开始同步 GitHub；git clone 已成功"}
+{"ts":"2026-05-06","event":"remote_clone_validation_passed","summary":"远端 clone 中测试、评测、编译、公开 demo、monorepo 模块加载和 Streamlit HTTP smoke 通过"}

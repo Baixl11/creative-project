@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import html as html_lib
+import sys
 from datetime import datetime
 from pathlib import Path
 from uuid import uuid4
@@ -8,13 +9,17 @@ from uuid import uuid4
 import streamlit as st
 from streamlit.components.v1 import html as components_html
 
+PROJECT_ROOT = Path(__file__).resolve().parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
 from app.agents.job_application_agent import JobApplicationAgent
 from app.config import Settings
 from app.errors import InputValidationError
 from app.models import WorkflowResult
 
 
-OUTPUT_DIR = Path("outputs/web")
+OUTPUT_DIR = PROJECT_ROOT / "outputs" / "web"
 UPLOAD_DIR = OUTPUT_DIR / "uploads"
 SUPPORTED_TYPES = [
     "txt",
@@ -84,22 +89,22 @@ def main() -> None:
     resume_file: object | None = None
 
     if mode == "使用内置样例":
-        jd_path = Path("data/sample_jd.txt")
-        resume_path = Path("data/sample_resume.txt")
+        jd_path = _project_path("data", "sample_jd.txt")
+        resume_path = _project_path("data", "sample_resume.txt")
         _render_mode_notice("这个模式适合面试演示第一步：证明基础流程稳定。")
     elif mode == "使用真实样例":
         private_sample_available = _private_real_sample_available()
         jd_path = _first_existing_path(
             [
-                Path("data/my_jd_plain.txt"),
-                Path("data/my_jd.txt"),
-                Path("data/demo_jd_cn.txt"),
+                _project_path("data", "my_jd_plain.txt"),
+                _project_path("data", "my_jd.txt"),
+                _project_path("data", "demo_jd_cn.txt"),
             ]
         )
         resume_path = _first_existing_path(
             [
-                Path("data/my_resume.pdf"),
-                Path("data/demo_resume_cn.txt"),
+                _project_path("data", "my_resume.pdf"),
+                _project_path("data", "demo_resume_cn.txt"),
             ]
         )
         if private_sample_available:
@@ -156,9 +161,15 @@ def _first_existing_path(paths: list[Path]) -> Path:
     return paths[-1]
 
 
+def _project_path(*parts: str) -> Path:
+    return PROJECT_ROOT.joinpath(*parts)
+
+
 def _private_real_sample_available() -> bool:
-    has_jd = Path("data/my_jd_plain.txt").exists() or Path("data/my_jd.txt").exists()
-    return has_jd and Path("data/my_resume.pdf").exists()
+    has_jd = _project_path("data", "my_jd_plain.txt").exists() or _project_path(
+        "data", "my_jd.txt"
+    ).exists()
+    return has_jd and _project_path("data", "my_resume.pdf").exists()
 
 
 def _render_sidebar() -> None:
@@ -237,7 +248,7 @@ def _run_agent(jd_path: Path, resume_path: Path) -> None:
 
     with st.spinner("Agent 正在读取文件、分析匹配度并生成报告..."):
         try:
-            settings = Settings.load(Path(".env"))
+            settings = Settings.load(_project_path(".env"))
             result = JobApplicationAgent(settings).run(
                 jd_path,
                 resume_path,

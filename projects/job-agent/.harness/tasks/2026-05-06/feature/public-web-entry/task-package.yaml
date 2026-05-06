@@ -1,0 +1,49 @@
+task_key: "2026-05-06/feature/public-web-entry"
+parent_task: null
+related_tasks:
+  - "2026-05-01/chore/github-monorepo-sync"
+route_reason: "new_request: 将本地 Web UI 升级为可部署的公网网页入口，并同步到既有 monorepo"
+branch: "harness/feature/public-web-entry"
+created_at: "2026-05-06"
+title: "配置公网网页即点即用入口"
+status: "planned"
+goal: "让 Job Agent 可以通过 Streamlit Community Cloud 从 GitHub monorepo 直接部署为网页应用，用户打开网页即可使用。"
+context: "当前项目已有 Streamlit Web UI，但默认仍需要本地终端启动。GitHub 仓库已经采用 projects/job-agent/ 多项目目录结构。"
+constraints:
+  - "保持 Python + Streamlit 主技术栈，不重写为前后端分离应用。"
+  - "不能提交 .env、.venv、outputs、data/my_* 或真实个人数据。"
+  - "GitHub monorepo 结构必须继续支持未来放入其他项目。"
+  - "默认使用 mock LLM，避免部署后产生 API key 或模型调用成本。"
+done_when:
+  - "Web UI 的路径处理适配 monorepo 子目录部署。"
+  - "项目包含 Streamlit Cloud 部署说明和必要配置。"
+  - "公开 demo 数据可在无私有文件的部署环境中运行。"
+  - "本地测试、评测、编译和公开 demo CLI 通过。"
+  - "如可行，完成 Streamlit 本地运行 smoke；交互验收边界写入验证报告。"
+  - "修改同步并 push 到 GitHub 仓库。"
+read_first:
+  - "AGENTS.md"
+  - "ARCHITECTURE.md"
+  - ".harness/project-profile.yaml"
+  - ".harness/environment.yaml"
+  - ".harness/workspace-map.yaml"
+  - ".agents/skills/job-agent-harness-request/references/problem-decomposition.md"
+  - ".agents/skills/job-agent-harness-request/references/runtime-verification.md"
+  - ".agents/skills/job-agent-harness-request/references/interaction-verification.md"
+verification_commands:
+  - ".venv/bin/python -m unittest discover -s tests"
+  - ".venv/bin/python -m app.evaluate --manifest data/eval_cases/manifest.json --output-dir outputs/evaluations"
+  - ".venv/bin/python -m py_compile web_app.py"
+  - ".venv/bin/python -m app.main --jd data/demo_jd_cn.txt --resume data/demo_resume_cn.txt --output outputs/demo_cn_report.md --json-output outputs/demo_cn_report.json"
+  - ".venv/bin/python .agents/skills/harness-project-bootstrap/scripts/validate_plan.py --plan .harness/bootstrap-plan.yaml --target ."
+git_strategy:
+  source_project_git: "not_a_git_repo"
+  remote_repo: "git@github.com:Baixl11/creative-project.git"
+  remote_monorepo_path: "projects/job-agent"
+  push_policy: "user_explicitly_requested_push"
+related_project_edit_scope:
+  - path: "/private/tmp/creative-project-public-web-entry"
+    harness_status: "absent"
+    write_policy: "allowed_for_sync_clone"
+assumptions:
+  - "公网即点即用优先解释为 Streamlit Community Cloud 可部署入口，而不是重写成静态站或自建服务器。"

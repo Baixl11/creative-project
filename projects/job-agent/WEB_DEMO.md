@@ -1,6 +1,26 @@
 # Job Agent Web Demo
 
-这份文档说明如何启动本地 Web UI，以及演示时应该重点讲什么。
+这份文档说明如何启动本地 Web UI、如何部署公网网页，以及演示时应该重点讲什么。
+
+## 公网网页入口
+
+如果项目已经同步到 GitHub monorepo，可以用 Streamlit Community Cloud 部署成网页。
+
+部署时填写：
+
+```text
+Repository: Baixl11/creative-project
+Branch: main
+Main file path: projects/job-agent/web_app.py
+```
+
+部署完成后，Streamlit 会生成一个 `*.streamlit.app` 链接。这个链接就是作品集里最适合放给面试官点击的入口。
+
+完整部署步骤见：
+
+```text
+DEPLOYMENT.md
+```
 
 ## 启动方式
 
@@ -40,6 +60,12 @@ source .venv/bin/activate
 
 ```bash
 streamlit run web_app.py
+```
+
+如果是在 `creative-project` 这个 GitHub monorepo 的根目录启动，命令是：
+
+```bash
+streamlit run projects/job-agent/web_app.py
 ```
 
 启动后浏览器会打开本地页面。通常地址是：

@@ -1,0 +1,38 @@
+schema_version: "1.0"
+source:
+  environment: ".harness/environment.yaml"
+  acceptance: "acceptance-criteria.md"
+  runtime_plan: "runtime-test-plan.md"
+tool:
+  preferred: "mcp_playwright_or_browser_automation"
+  fallback: "http_smoke_plus_user_manual_acceptance"
+  availability: "unknown"
+entry:
+  kind: "web"
+  command: "streamlit run projects/job-agent/web_app.py"
+  url: "http://localhost:8501"
+  working_dir: "/private/tmp/creative-project-public-web-entry"
+viewport:
+  width: 1440
+  height: 1000
+  device_scale_factor: 1
+  zoom_factor: 1
+scenarios:
+  - name: "monorepo web entry loads"
+    steps:
+      - action: "start_server"
+        target: "streamlit run projects/job-agent/web_app.py"
+        expected: "Streamlit server starts without import/path errors"
+      - action: "navigate"
+        target: "http://localhost:8501"
+        expected: "Job Agent 页面加载"
+      - action: "inspect"
+        target: "page"
+        expected: "能看到标题、输入方式和生成报告按钮"
+    expected:
+      - "HTTP healthcheck returns success"
+      - "No blocking startup error"
+    evidence:
+      screenshot: "snapshots/monorepo-web-entry.png"
+      console: "logs/monorepo-web-entry-console.json"
+      network: "logs/monorepo-web-entry-network.json"

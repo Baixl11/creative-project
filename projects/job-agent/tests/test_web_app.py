@@ -42,6 +42,18 @@ class WebAppTests(unittest.TestCase):
                 public_demo,
             )
 
+    def test_project_path_is_absolute_and_points_to_project_files(self) -> None:
+        sample_path = web_app._project_path("data", "sample_jd.txt")
+
+        self.assertTrue(sample_path.is_absolute())
+        self.assertEqual(sample_path.parent.name, "data")
+        self.assertTrue(sample_path.exists())
+
+    def test_output_dir_lives_inside_project_root(self) -> None:
+        self.assertTrue(web_app.OUTPUT_DIR.is_absolute())
+        self.assertEqual(web_app.OUTPUT_DIR.parent.name, "outputs")
+        self.assertEqual(web_app.OUTPUT_DIR.name, "web")
+
     def test_supported_format_summary_mentions_core_inputs(self) -> None:
         summary = web_app.SUPPORTED_FORMAT_SUMMARY.lower()
 

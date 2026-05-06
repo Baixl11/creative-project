@@ -26,8 +26,29 @@ If you are reviewing this as a portfolio project, start here:
 - [PROJECT_STATUS.md](PROJECT_STATUS.md): current completion status, next 3 days, remaining work, and delivery checklist
 - [DEMO_GUIDE.md](DEMO_GUIDE.md): step-by-step local demo script for interviews or project walkthroughs
 - [WEB_DEMO.md](WEB_DEMO.md): local Streamlit web UI launch and demo guide
+- [DEPLOYMENT.md](DEPLOYMENT.md): Streamlit Community Cloud deployment guide for the GitHub monorepo
 - [AGENTS.md](AGENTS.md): Codex collaboration rules, verification gates, and task workflow
 - [ARCHITECTURE.md](ARCHITECTURE.md): current project map, module boundaries, generated artifacts, and core commands
+
+## Web entry
+
+The recommended portfolio entry is the Streamlit Web UI.
+
+For local use:
+
+```bash
+streamlit run web_app.py
+```
+
+For the GitHub monorepo deployment, use Streamlit Community Cloud with:
+
+```text
+Repository: Baixl11/creative-project
+Branch: main
+Main file path: projects/job-agent/web_app.py
+```
+
+The public Web app runs in mock mode by default, so reviewers can try the product flow without an API key or model cost.
 
 ## Why this project is a good first AI build
 
@@ -108,6 +129,12 @@ python3 -m app.main --jd data/demo_jd_cn.txt --resume data/demo_resume_cn.txt --
 
 ```bash
 streamlit run web_app.py
+```
+
+If this project is inside the `creative-project` monorepo, launch it from the monorepo root with:
+
+```bash
+streamlit run projects/job-agent/web_app.py
 ```
 
 6. Open the generated artifacts.

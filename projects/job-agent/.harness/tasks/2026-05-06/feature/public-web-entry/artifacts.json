@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.0",
+  "artifacts": [
+    {"path": "problem-decomposition.md", "status": "present"},
+    {"path": "research-notes.md", "status": "present"},
+    {"path": "acceptance-criteria.md", "status": "present"},
+    {"path": "functional-test-plan.md", "status": "present"},
+    {"path": "runtime-test-plan.md", "status": "present"},
+    {"path": "interaction-test-plan.yaml", "status": "present"},
+    {"path": "../../../web_app.py", "status": "updated"},
+    {"path": "../../../tests/test_web_app.py", "status": "updated"},
+    {"path": "../../../DEPLOYMENT.md", "status": "created"},
+    {"path": "../../../packages.txt", "status": "created"},
+    {"path": "../../../.streamlit/config.toml", "status": "created"},
+    {"path": "../../../README.md", "status": "updated"},
+    {"path": "../../../WEB_DEMO.md", "status": "updated"}
+  ]
+}

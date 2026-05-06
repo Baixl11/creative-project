@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "updated_at": "2026-05-01",
+  "updated_at": "2026-05-06",
   "tasks": [
     {
       "task_key": "2026-04-29/feature/chinese-ocr-support",
@@ -51,6 +51,16 @@
       "branch": "harness/chore/github-monorepo-sync",
       "summary": "已按 projects/job-agent/ monorepo 结构同步并 push 到 GitHub，主体同步提交为 27bb648，收尾记录提交为 332ff04。",
       "updated_at": "2026-05-01"
+    },
+    {
+      "task_key": "2026-05-06/feature/public-web-entry",
+      "title": "配置公网网页即点即用入口",
+      "type": "feature",
+      "slug": "public-web-entry",
+      "status": "ready_to_push",
+      "branch": "harness/feature/public-web-entry",
+      "summary": "网页入口部署适配和 monorepo 运行验证已通过，准备提交并 push 到 GitHub。",
+      "updated_at": "2026-05-06"
     }
   ]
 }
