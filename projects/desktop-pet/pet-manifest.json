@@ -1,0 +1,4 @@
+{
+  "defaultPetId": "line-dog",
+  "supportedPetIds": ["line-dog", "line-cat", "line-rabbit", "line-alpaca", "line-cow"]
+}

@@ -1,0 +1,11 @@
+node_modules/
+dist/
+release/
+.npm-cache/
+*.log
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
