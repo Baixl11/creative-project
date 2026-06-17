@@ -9,6 +9,7 @@
 | 项目 | 目录 | 简介 |
 | --- | --- | --- |
 | Job Agent / 求职与职业转型助手 Agent | `projects/job-agent/` | 本地运行的求职场景 AI Agent，可读取 JD 和简历，生成匹配分析、证据句、简历 bullet 改写和面试准备建议。 |
+| Desktop Pet / 桌面宠物 | `projects/desktop-pet/` | Electron + React + Three.js 桌面宠物应用，提供透明桌面宠物窗口、托盘控制、角色切换、设置面板和 Windows 打包流程。 |
 
 ## 目录结构
 
@@ -23,6 +24,13 @@ creative-project/
       docs/
       tests/
       web_app.py
+    desktop-pet/
+      README.md
+      electron/
+      src/
+      docs/
+      scripts/
+      package.json
 ```
 
 ## 当前项目亮点
@@ -31,6 +39,10 @@ creative-project/
 - `projects/job-agent/PORTFOLIO_CASE_STUDY.md`：作品集页面稿。
 - `projects/job-agent/docs/portfolio/job_agent_case_study.pdf`：项目整体介绍 PDF。
 - Streamlit Cloud 网页入口配置：`projects/job-agent/web_app.py`。
+- `projects/desktop-pet/`：Electron + React + Three.js 桌面宠物项目，包含透明桌面宠物窗口、托盘控制、五个线稿宠物角色、中文设置面板和本地配置持久化。
+- `projects/desktop-pet/PRD-desktop-pet.md`：桌面宠物 MVP 产品需求。
+- `projects/desktop-pet/docs/codex/`：项目目标、决策记录、验证清单和交接文档。
+- `projects/desktop-pet/docs/social/xhs-desktop-pet/`：小红书项目展示素材。
 
 ## Web 部署
 

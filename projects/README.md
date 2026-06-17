@@ -5,6 +5,7 @@
 ## 当前项目
 
 - `job-agent/`：求职与职业转型助手 Agent，本地 Python AI Agent 项目。
+- `desktop-pet/`：桌面宠物应用，Electron + React + Three.js 项目，包含透明宠物窗口、系统托盘控制、角色切换和 Windows 打包流程。
 
 ## 新项目放置规则
 
