@@ -10,6 +10,7 @@
 | --- | --- | --- |
 | Job Agent / 求职与职业转型助手 Agent | `projects/job-agent/` | 本地运行的求职场景 AI Agent，可读取 JD 和简历，生成匹配分析、证据句、简历 bullet 改写和面试准备建议。 |
 | Desktop Pet / 桌面宠物 | `projects/desktop-pet/` | Electron + React + Three.js 桌面宠物应用，提供透明桌面宠物窗口、托盘控制、角色切换、设置面板和 Windows 打包流程。 |
+| Redbook Monitoring / 小红书账号监控平台 | `projects/redbook-monitoring/` | 本地运行的小红书创作者账号监控看板，支持多账号授权、定时采集、SQLite 存储、笔记监控、趋势分析和采集任务追踪。 |
 
 ## 目录结构
 
@@ -31,6 +32,12 @@ creative-project/
       docs/
       scripts/
       package.json
+    redbook-monitoring/
+      README.md
+      src/
+      assets/
+      scripts/
+      package.json
 ```
 
 ## 当前项目亮点
@@ -43,6 +50,8 @@ creative-project/
 - `projects/desktop-pet/PRD-desktop-pet.md`：桌面宠物 MVP 产品需求。
 - `projects/desktop-pet/docs/codex/`：项目目标、决策记录、验证清单和交接文档。
 - `projects/desktop-pet/docs/social/xhs-desktop-pet/`：小红书项目展示素材。
+- `projects/redbook-monitoring/`：小红书创作者账号监控平台，基于 Express + Playwright + SQLite，提供总览、笔记、趋势、采集任务和账号设置页面。
+- `projects/redbook-monitoring/demo-overview.png`、`projects/redbook-monitoring/demo-notes.png`：监控看板演示截图。
 
 ## Web 部署
 

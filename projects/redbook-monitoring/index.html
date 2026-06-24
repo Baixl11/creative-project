@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>小红书监控 · 账号总览</title>
+    <link rel="stylesheet" href="assets/styles.css?v=20260624-kpi-date-format">
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="主导航">
+        <a class="brand" href="index.html">
+          <span class="brand-mark">R</span>
+          <span>
+            <strong>Redbook Monitor</strong>
+            <small>创作者数据看板</small>
+          </span>
+        </a>
+        <nav class="nav-list">
+          <a class="nav-item active" href="index.html"><span>总览</span></a>
+          <a class="nav-item" href="notes.html"><span>笔记监控</span></a>
+          <a class="nav-item" href="trends.html"><span>趋势分析</span></a>
+          <a class="nav-item" href="tasks.html"><span>采集任务</span></a>
+          <a class="nav-item" href="settings.html"><span>账号配置</span></a>
+        </nav>
+      </aside>
+
+      <main class="main">
+        <header class="topbar">
+          <div>
+            <h1>账号总览</h1>
+            <p class="page-subtitle">同时查看全部账号的核心数据、最近变化和采集状态。</p>
+          </div>
+          <div class="topbar-actions">
+            <div class="scope-tabs" aria-label="账号视角">
+              <button class="scope-chip active" data-scope="all">全部账号</button>
+            </div>
+            <div class="status-pill" data-status-summary>
+              <span class="status-dot success"></span>
+              正在检测账号状态
+            </div>
+            <button class="button primary" data-refresh>手动刷新</button>
+          </div>
+        </header>
+
+        <section class="notice success">
+          <strong>全部账号最近采集完成</strong>
+          <span data-overview-notice>等待采集后显示最新完整日、周期累计和数据来源。</span>
+        </section>
+
+        <section class="kpi-grid" aria-label="核心指标">
+          <article class="kpi-card" data-kpi-card="followers">
+            <p>粉丝</p>
+            <strong data-kpi-value>1</strong>
+            <span class="delta muted" data-kpi-delta>最新日：0</span>
+          </article>
+          <article class="kpi-card" data-kpi-card="reads">
+            <p>阅读</p>
+            <strong data-kpi-value>56</strong>
+            <span class="delta up" data-kpi-delta>最新日：+2</span>
+          </article>
+          <article class="kpi-card" data-kpi-card="impressions">
+            <p>曝光</p>
+            <strong data-kpi-value>551</strong>
+            <span class="delta up" data-kpi-delta>最新日：+36</span>
+          </article>
+          <article class="kpi-card" data-kpi-card="likes">
+            <p>点赞</p>
+            <strong data-kpi-value>3</strong>
+            <span class="delta muted" data-kpi-delta>最新日：0</span>
+          </article>
+          <article class="kpi-card" data-kpi-card="collections">
+            <p>收藏</p>
+            <strong data-kpi-value>0</strong>
+            <span class="delta muted" data-kpi-delta>最新日：0</span>
+          </article>
+          <article class="kpi-card" data-kpi-card="comments">
+            <p>评论</p>
+            <strong data-kpi-value>3</strong>
+            <span class="delta muted" data-kpi-delta>最新日：0</span>
+          </article>
+          <article class="kpi-card" data-kpi-card="profileViews">
+            <p>主页访问</p>
+            <strong data-kpi-value>5</strong>
+            <span class="delta muted" data-kpi-delta>最新日：0</span>
+          </article>
+        </section>
+
+        <section class="account-summary-grid" aria-label="账号对比" data-account-summary>
+          <article class="summary-account-card">
+            <div class="account-title">
+              <strong>账号数据加载中</strong>
+              <span class="status-pill small"><span class="status-dot warning"></span>待同步</span>
+            </div>
+            <p class="account-subline">小红书号：待同步</p>
+            <div class="summary-metrics">
+              <span><b>0</b> 粉丝</span>
+              <span><b>0</b> 阅读</span>
+              <span><b>0</b> 最新日涨粉</span>
+            </div>
+          </article>
+        </section>
+
+        <section class="content-grid two">
+          <article class="panel">
+            <div class="panel-heading">
+              <div>
+                <h2>全部账号 7 日互动趋势</h2>
+                <p>点赞、收藏、评论的合计变化。</p>
+              </div>
+              <span class="tag">全部账号</span>
+            </div>
+            <div class="line-chart" aria-label="7 日互动趋势" data-interaction-trend>
+              <p class="chart-empty">正在读取真实互动数据。</p>
+            </div>
+          </article>
+
+          <article class="panel">
+            <div class="panel-heading">
+              <div>
+                <h2>增长摘要</h2>
+                <p>最新完整日和周期口径的主要变化。</p>
+              </div>
+            </div>
+            <ul class="insight-list" data-insight-list>
+              <li>
+                <strong>等待真实采集数据</strong>
+                <span>完成采集后将显示账号变化摘要。</span>
+              </li>
+              <li>
+                <strong>账号身份同步中</strong>
+                <span>页面会展示已登录账号的小红书昵称和小红书号。</span>
+              </li>
+              <li>
+                <strong>登录态检查</strong>
+                <span>如遇验证，会在账号配置页提示重新授权。</span>
+              </li>
+            </ul>
+          </article>
+        </section>
+      </main>
+    </div>
+    <script src="assets/app.js?v=20260624-kpi-date-format"></script>
+  </body>
+</html>

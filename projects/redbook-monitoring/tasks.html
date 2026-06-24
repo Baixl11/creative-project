@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>小红书监控 · 采集任务</title>
+    <link rel="stylesheet" href="assets/styles.css?v=20260624-kpi-date-format">
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="主导航">
+        <a class="brand" href="index.html">
+          <span class="brand-mark">R</span>
+          <span>
+            <strong>Redbook Monitor</strong>
+            <small>创作者数据看板</small>
+          </span>
+        </a>
+        <nav class="nav-list">
+          <a class="nav-item" href="index.html"><span>总览</span></a>
+          <a class="nav-item" href="notes.html"><span>笔记监控</span></a>
+          <a class="nav-item" href="trends.html"><span>趋势分析</span></a>
+          <a class="nav-item active" href="tasks.html"><span>采集任务</span></a>
+          <a class="nav-item" href="settings.html"><span>账号配置</span></a>
+        </nav>
+      </aside>
+
+      <main class="main">
+        <header class="topbar">
+          <div>
+            <h1>采集任务</h1>
+            <p class="page-subtitle">按账号查看定时任务、手动刷新和登录/采集异常。</p>
+          </div>
+          <div class="topbar-actions">
+            <div class="scope-tabs" aria-label="账号视角">
+              <button class="scope-chip active" data-scope="all">全部账号</button>
+            </div>
+            <button class="button primary" data-refresh>立即采集全部</button>
+          </div>
+        </header>
+
+        <section class="content-grid three" data-task-state-grid>
+          <article class="panel state-card">
+            <span class="status-dot warning"></span>
+            <h2>账号状态加载中</h2>
+            <p>正在读取本地账号、登录态和最近采集时间。</p>
+          </article>
+        </section>
+
+        <section class="panel">
+          <div class="panel-heading">
+            <div>
+              <h2>登录授权状态</h2>
+              <p>首次人工登录后保存本地 session；失效时暂停对应账号采集。</p>
+            </div>
+            <span class="tag" data-auth-session-summary>正在检测</span>
+          </div>
+          <div class="auth-list compact" data-auth-session-list>
+            <article class="auth-item">
+              <span class="status-dot warning"></span>
+              <div>
+                <strong>正在检测登录态</strong>
+                <p>读取本地 session 文件和账号凭据状态。</p>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-heading">
+            <div>
+              <h2>账号采集队列</h2>
+              <p>每天 10:00 按账号依次执行，单个账号失败不阻塞其他账号。</p>
+            </div>
+            <span class="tag" data-scheduler-status>每天 10:00</span>
+          </div>
+          <div class="queue-grid" data-task-queue>
+            <article>
+              <span class="status-dot warning"></span>
+              <strong>采集队列加载中</strong>
+              <p>等待本地 API 返回账号队列。</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-heading">
+            <div>
+              <h2>采集日志</h2>
+              <p>最近 5 次跨账号执行记录。</p>
+            </div>
+            <span class="tag">SQLite 日志</span>
+          </div>
+          <ol class="timeline" data-collection-logs>
+            <li>
+              <span class="timeline-dot warning"></span>
+              <div>
+                <strong>采集日志加载中</strong>
+                <p>正在读取 SQLite 日志。</p>
+              </div>
+            </li>
+          </ol>
+        </section>
+      </main>
+    </div>
+    <script src="assets/app.js?v=20260624-kpi-date-format"></script>
+  </body>
+</html>

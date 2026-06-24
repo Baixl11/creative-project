@@ -1,0 +1,20 @@
+{
+  "name": "redbook-monitoring",
+  "version": "0.1.0",
+  "description": "本地运行的小红书创作者账号监控看板，支持多账号授权、定时采集、SQLite 存储、笔记监控、趋势分析和采集任务追踪。",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch src/server.js",
+    "start": "node src/server.js",
+    "check": "node --check src/config.js && node --check src/credentials.js && node --check src/authSessions.js && node --check src/collectors/xhsCollector.js && node --check src/scheduler.js && node --check src/server.js && node --check src/database.js && node --check src/repositories/accounts.js && node --check src/repositories/collectionData.js && node --check src/repositories/dashboard.js && node --check assets/app.js && node --check scripts/consistency-check.mjs",
+    "test:consistency": "node scripts/consistency-check.mjs"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "playwright": "^1.56.0"
+  },
+  "engines": {
+    "node": ">=25.0.0"
+  }
+}

@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>小红书监控 · 笔记监控</title>
+    <link rel="stylesheet" href="assets/styles.css?v=20260624-kpi-date-format">
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="主导航">
+        <a class="brand" href="index.html">
+          <span class="brand-mark">R</span>
+          <span>
+            <strong>Redbook Monitor</strong>
+            <small>创作者数据看板</small>
+          </span>
+        </a>
+        <nav class="nav-list">
+          <a class="nav-item" href="index.html"><span>总览</span></a>
+          <a class="nav-item active" href="notes.html"><span>笔记监控</span></a>
+          <a class="nav-item" href="trends.html"><span>趋势分析</span></a>
+          <a class="nav-item" href="tasks.html"><span>采集任务</span></a>
+          <a class="nav-item" href="settings.html"><span>账号配置</span></a>
+        </nav>
+      </aside>
+
+      <main class="main">
+        <header class="topbar">
+          <div>
+            <h1>笔记监控</h1>
+            <p class="page-subtitle">同时查看多个账号的笔记数据，默认按发布时间倒序。</p>
+          </div>
+          <div class="topbar-actions">
+            <div class="scope-tabs" aria-label="账号视角">
+              <button class="scope-chip active" data-scope="all">全部账号</button>
+            </div>
+            <div class="search-box">
+              <input type="search" placeholder="搜索笔记标题" data-notes-search>
+            </div>
+            <button class="button primary" data-refresh>刷新数据</button>
+          </div>
+        </header>
+
+        <section class="panel table-panel">
+          <div class="panel-heading">
+            <div>
+              <h2>全部笔记</h2>
+              <p data-notes-summary>正在读取本地 SQLite 真实笔记数据。</p>
+            </div>
+            <span class="tag">发布时间倒序</span>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>笔记标题</th>
+                  <th>账号</th>
+                  <th>发布时间</th>
+                  <th>阅读</th>
+                  <th>曝光</th>
+                  <th>点赞</th>
+                  <th>收藏</th>
+                  <th>评论</th>
+                  <th>涨粉贡献</th>
+                </tr>
+              </thead>
+              <tbody data-notes-table>
+                <tr>
+                  <td>
+                    <strong>笔记数据加载中</strong>
+                    <small>等待本地 API 返回真实笔记</small>
+                  </td>
+                  <td><span class="account-label">待同步</span></td>
+                  <td>-</td>
+                  <td>待采集 <span class="mini-delta muted">待采集</span></td>
+                  <td>待采集 <span class="mini-delta muted">待采集</span></td>
+                  <td>待采集</td>
+                  <td>待采集</td>
+                  <td>待采集</td>
+                  <td>待采集</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+    <script src="assets/app.js?v=20260624-kpi-date-format"></script>
+  </body>
+</html>

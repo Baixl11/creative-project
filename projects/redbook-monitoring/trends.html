@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>小红书监控 · 趋势分析</title>
+    <link rel="stylesheet" href="assets/styles.css?v=20260624-kpi-date-format">
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="主导航">
+        <a class="brand" href="index.html">
+          <span class="brand-mark">R</span>
+          <span>
+            <strong>Redbook Monitor</strong>
+            <small>创作者数据看板</small>
+          </span>
+        </a>
+        <nav class="nav-list">
+          <a class="nav-item" href="index.html"><span>总览</span></a>
+          <a class="nav-item" href="notes.html"><span>笔记监控</span></a>
+          <a class="nav-item active" href="trends.html"><span>趋势分析</span></a>
+          <a class="nav-item" href="tasks.html"><span>采集任务</span></a>
+          <a class="nav-item" href="settings.html"><span>账号配置</span></a>
+        </nav>
+      </aside>
+
+      <main class="main">
+        <header class="topbar">
+          <div>
+            <h1>趋势分析</h1>
+            <p class="page-subtitle">对比多个账号的粉丝、阅读、曝光和互动指标周期变化。</p>
+          </div>
+          <div class="topbar-actions">
+            <div class="scope-tabs" aria-label="账号视角">
+              <button class="scope-chip active" data-scope="all">全部账号</button>
+            </div>
+            <div class="segmented">
+              <button class="active" data-trend-range="7">7 日</button>
+              <button data-trend-range="30">30 日</button>
+              <button data-trend-range="all">全部</button>
+            </div>
+          </div>
+        </header>
+
+        <section class="content-grid two">
+          <article class="panel">
+            <div class="panel-heading">
+              <div>
+                <h2 data-trend-followers-title>全部账号粉丝增长</h2>
+                <p data-trend-followers-summary>正在读取本地 SQLite 趋势数据。</p>
+              </div>
+              <span class="metric-badge" data-trend-followers-badge>读取中</span>
+            </div>
+            <div class="bar-chart" aria-label="粉丝增长柱状图" data-trend-followers-chart>
+              <p class="chart-empty">正在读取真实粉丝增长数据。</p>
+            </div>
+          </article>
+
+          <article class="panel">
+            <div class="panel-heading">
+              <div>
+                <h2 data-trend-impressions-title>全部账号曝光与阅读</h2>
+                <p data-trend-impressions-summary>完成采集后将展示曝光与阅读变化。</p>
+              </div>
+              <span class="metric-badge blue" data-trend-impressions-badge>读取中</span>
+            </div>
+            <div class="line-chart wide" aria-label="曝光与阅读趋势" data-trend-impressions-chart>
+              <p class="chart-empty">正在读取真实曝光与阅读数据。</p>
+            </div>
+          </article>
+        </section>
+
+        <section class="panel">
+          <div class="panel-heading">
+            <div>
+              <h2>账号周期对比</h2>
+              <p>按账号查看最新完整日与周期数据的差异。</p>
+            </div>
+          </div>
+          <div class="comparison-grid account-comparison" data-trend-comparison>
+            <article>
+              <span>账号数据加载中</span>
+              <strong>0 阅读</strong>
+              <small>等待真实采集数据</small>
+            </article>
+          </div>
+        </section>
+      </main>
+    </div>
+    <script src="assets/app.js?v=20260624-kpi-date-format"></script>
+  </body>
+</html>

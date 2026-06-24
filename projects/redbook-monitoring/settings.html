@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>小红书监控 · 账号配置</title>
+    <link rel="stylesheet" href="assets/styles.css?v=20260624-kpi-date-format">
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="主导航">
+        <a class="brand" href="index.html">
+          <span class="brand-mark">R</span>
+          <span>
+            <strong>Redbook Monitor</strong>
+            <small>创作者数据看板</small>
+          </span>
+        </a>
+        <nav class="nav-list">
+          <a class="nav-item" href="index.html"><span>总览</span></a>
+          <a class="nav-item" href="notes.html"><span>笔记监控</span></a>
+          <a class="nav-item" href="trends.html"><span>趋势分析</span></a>
+          <a class="nav-item" href="tasks.html"><span>采集任务</span></a>
+          <a class="nav-item active" href="settings.html"><span>账号配置</span></a>
+        </nav>
+      </aside>
+
+      <main class="main">
+        <header class="topbar">
+          <div>
+            <h1>账号配置</h1>
+            <p class="page-subtitle">管理多个监控账号，检查凭据和本地数据状态。</p>
+          </div>
+          <button class="button primary" data-save>保存配置</button>
+        </header>
+
+        <section class="content-grid settings-grid">
+          <article class="panel">
+            <div class="panel-heading">
+              <div>
+                <h2>监控账号</h2>
+                <p>支持配置多个小红书账号，并管理增删。</p>
+              </div>
+              <div class="panel-actions">
+                <span class="tag" data-account-count>正在加载</span>
+                <button class="button primary" type="button" data-open-account-dialog>新增账号</button>
+              </div>
+            </div>
+            <div class="account-list" data-account-list>
+              <article class="account-card">
+                <div class="account-avatar">R</div>
+                <div class="account-body">
+                  <div class="account-title">
+                    <strong>账号配置加载中</strong>
+                    <span class="status-pill small"><span class="status-dot warning"></span>待同步</span>
+                  </div>
+                  <p>正在读取本地 SQLite 账号配置。</p>
+                  <div class="account-meta">
+                    <span>小红书号：待同步</span>
+                    <span>最近采集：尚未采集</span>
+                  </div>
+                </div>
+              </article>
+            </div>
+            <p class="form-tip account-list-message" data-form-message>账号配置已从本地 SQLite 加载。</p>
+          </article>
+        </section>
+
+        <dialog class="modal" data-account-dialog aria-labelledby="account-dialog-title">
+          <div class="modal-card">
+            <div class="modal-heading">
+              <div>
+                <p class="eyebrow">账号授权</p>
+                <h2 id="account-dialog-title">新增账号</h2>
+                <p>选择手机号/密码或微信扫码授权，系统会自动生成内部凭据。</p>
+              </div>
+              <button class="button secondary" type="button" data-close-account-dialog>关闭</button>
+            </div>
+            <form class="form" data-account-form>
+              <label>
+                <span>账号名称</span>
+                <input name="accountName" type="text" value="新账号" autocomplete="off">
+              </label>
+              <label>
+                <span>小红书主页链接</span>
+                <input name="profileUrl" type="url" value="https://xhslink.com/m/new-account">
+              </label>
+              <fieldset class="form-fieldset">
+                <legend>登录方式</legend>
+                <label class="radio-row">
+                  <input name="loginMethod" type="radio" value="password" checked>
+                  <span>手机号/密码登录</span>
+                </label>
+                <label class="radio-row">
+                  <input name="loginMethod" type="radio" value="wechat">
+                  <span>微信扫码登录</span>
+                </label>
+              </fieldset>
+              <div data-password-login-fields>
+                <label>
+                  <span>手机号 / 账号</span>
+                  <input name="username" type="text" autocomplete="username" placeholder="请输入手机号或小红书登录账号">
+                </label>
+                <label>
+                  <span>密码</span>
+                  <input name="password" type="password" autocomplete="current-password" placeholder="只保存到本地 .env">
+                </label>
+              </div>
+              <p class="form-tip" data-wechat-login-tip hidden>添加后请在“登录授权”区域点击微信扫码授权，完成后系统会保存本地 session。</p>
+              <label>
+                <span>定时采集时间</span>
+                <input type="text" value="每天 10:00 Asia/Shanghai" disabled>
+              </label>
+              <p class="form-tip" data-form-message>提交后会写入本地 SQLite；手机号/密码只保存到本地 .env。</p>
+              <div class="form-actions">
+                <button class="button secondary" type="button" data-close-account-dialog>取消</button>
+                <button class="button primary" type="submit" data-add-account>添加账号</button>
+              </div>
+            </form>
+          </div>
+        </dialog>
+
+        <section class="content-grid settings-grid">
+          <article class="panel">
+            <div class="panel-heading">
+              <div>
+                <h2>登录授权</h2>
+                <p>首次人工登录后保存本地 session，后续采集优先复用。</p>
+              </div>
+              <span class="tag" data-auth-session-summary>正在检测</span>
+            </div>
+            <div class="auth-list" data-auth-session-list>
+              <article class="auth-item">
+                <span class="status-dot warning"></span>
+                <div>
+                  <strong>正在检测登录态</strong>
+                  <p>读取本地 session 文件和账号凭据状态。</p>
+                </div>
+              </article>
+            </div>
+          </article>
+
+        </section>
+      </main>
+    </div>
+    <script src="assets/app.js?v=20260624-kpi-date-format"></script>
+  </body>
+</html>
