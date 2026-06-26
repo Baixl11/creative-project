@@ -29,7 +29,9 @@ const trendImpressionsSummary = document.querySelector("[data-trend-impressions-
 const trendImpressionsBadge = document.querySelector("[data-trend-impressions-badge]");
 const trendImpressionsChart = document.querySelector("[data-trend-impressions-chart]");
 const trendComparison = document.querySelector("[data-trend-comparison]");
-const trendRangeButtons = document.querySelectorAll("[data-trend-range]");
+const dateRangeForms = document.querySelectorAll("[data-date-range-form]");
+const dateRangeStartInputs = document.querySelectorAll("[data-date-range-start]");
+const dateRangeEndInputs = document.querySelectorAll("[data-date-range-end]");
 const taskStateGrid = document.querySelector("[data-task-state-grid]");
 const taskQueue = document.querySelector("[data-task-queue]");
 const collectionLogs = document.querySelector("[data-collection-logs]");
@@ -38,11 +40,19 @@ const authSessionSummary = document.querySelectorAll("[data-auth-session-summary
 const schedulerStatus = document.querySelector("[data-scheduler-status]");
 
 const numberFormatter = new Intl.NumberFormat("zh-CN");
+const datePattern = /^\d{4}-\d{2}-\d{2}$/;
+const dateRangeStorageKey = "redbookMonitor.dateRange";
+const collectionStatusStorageKey = "redbookMonitor.collectionStatus.seenJob";
 let authPollTimer = null;
+let collectionStatusPollTimer = null;
 let selectedScope = "all";
-let selectedTrendRange = "7";
+let selectedDateRange = null;
+let availableDateRange = null;
 let currentNotes = [];
+let currentNoteCoverage = null;
 let lastAutoRefreshAt = 0;
+let currentCollectionJob = null;
+let lastCollectionRefreshJobKey = "";
 
 function formatNumber(value) {
   return numberFormatter.format(Number(value || 0));
@@ -52,6 +62,11 @@ function formatDelta(value, suffix = "最新日") {
   const number = Number(value || 0);
   const formatted = `${number > 0 ? "+" : ""}${formatNumber(number)}`;
   return suffix ? `${formatted} ${suffix}` : formatted;
+}
+
+function signedNumber(value) {
+  const number = Number(value || 0);
+  return number > 0 ? `+${formatNumber(number)}` : formatNumber(number);
 }
 
 function formatMetricValue(value) {
@@ -66,6 +81,25 @@ function localToday() {
   return new Date().toLocaleDateString("sv-SE", {
     timeZone: "Asia/Shanghai",
   });
+}
+
+function isDateString(value) {
+  return datePattern.test(String(value || ""));
+}
+
+function dateFromString(value) {
+  const [year, month, day] = value.split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, day));
+}
+
+function dateToString(value) {
+  return value.toISOString().slice(0, 10);
+}
+
+function shiftDate(value, days) {
+  const date = dateFromString(value);
+  date.setUTCDate(date.getUTCDate() + days);
+  return dateToString(date);
 }
 
 function shortDateLabel(value) {
@@ -96,6 +130,41 @@ function displayDateLabel(value) {
   return value;
 }
 
+function minDateText(left, right) {
+  if (!left) {
+    return right || "";
+  }
+  if (!right) {
+    return left;
+  }
+  return left < right ? left : right;
+}
+
+function maxDateText(left, right) {
+  if (!left) {
+    return right || "";
+  }
+  if (!right) {
+    return left;
+  }
+  return left > right ? left : right;
+}
+
+function compactDateLabel(value) {
+  return shortDateLabel(value);
+}
+
+function chartCanvasWidth(pointCount, minWidth = 640, pointWidth = 56) {
+  return Math.max(minWidth, Math.max(1, pointCount) * pointWidth);
+}
+
+function createChartScrollPane(width, className = "chart-scroll-pane") {
+  const pane = document.createElement("div");
+  pane.className = className;
+  pane.style.setProperty("--chart-canvas-width", `${width}px`);
+  return pane;
+}
+
 function metricDeltaSuffix(record = {}) {
   const date = record.daily_metric_date || record.dailyMetricDate || "";
   if (!date) {
@@ -107,21 +176,21 @@ function metricDeltaSuffix(record = {}) {
 
 function metricDailyLabel(record = {}) {
   const suffix = metricDeltaSuffix(record);
-  return suffix === "今日" ? "今日" : `${suffix} 单日`;
+  return suffix === "今日" ? "今日" : `${displayDateLabel(suffix)} 单日`;
 }
 
 function metricPeriodLabel(record = {}) {
   const period = record.metric_period || record.metricPeriod || "";
   const start = record.period_start || record.periodStart || "";
   const end = record.period_end || record.periodEnd || "";
-  const label = period === "seven" ? "7日周期" : period === "thirty" ? "30日周期" : "最近周期";
+  const label = period === "seven" ? "7日周期" : period === "thirty" ? "30日周期" : "所选区间";
 
   return start && end ? `${label} ${start} 至 ${end}` : label;
 }
 
 function metricSourceLabel(record = {}) {
   const source = record.source_name || record.sourceName || "";
-  if (source.includes("/account/base")) {
+  if (source.includes("/account/base") || source.includes("account_daily_metrics")) {
     return "创作者中心账号数据";
   }
 
@@ -132,28 +201,117 @@ function hasMetricSnapshot(record = {}) {
   return Boolean(record.captured_at || record.capturedAt);
 }
 
-function trendRangeLabel() {
-  const labels = {
-    7: "7 日",
-    30: "30 日",
-    all: "全部周期",
-  };
-
-  return labels[selectedTrendRange] || "7 日";
-}
-
-function trendRequestParams() {
-  if (selectedTrendRange === "30" || selectedTrendRange === "all") {
-    return { days: "30", metricPeriod: "thirty" };
+function dateRangeLabel(range = selectedDateRange) {
+  if (!range?.startDate || !range?.endDate) {
+    return "所选区间";
   }
 
-  return { days: "7", metricPeriod: "seven" };
+  return `${displayDateLabel(range.startDate)} 至 ${displayDateLabel(range.endDate)}`;
 }
 
-function updateTrendRangeButtons() {
-  trendRangeButtons.forEach((button) => {
-    button.classList.toggle("active", button.dataset.trendRange === selectedTrendRange);
+function noteDateRangeLabel(coverage = {}) {
+  const first = coverage.first_published_at || "";
+  const last = coverage.last_published_at || "";
+  if (!first && !last) {
+    return "";
+  }
+  if (!first || first === last) {
+    return first || last;
+  }
+
+  return `${first} 至 ${last}`;
+}
+
+function normalizeNoteCoverage(coverage = {}) {
+  return {
+    ...coverage,
+    total_note_count: Number(coverage.total_note_count || 0),
+    range_note_count: Number(coverage.range_note_count || 0),
+    first_published_at: coverage.first_published_at || "",
+    last_published_at: coverage.last_published_at || "",
+  };
+}
+
+function normalizeDateRange(startDate, endDate) {
+  let start = isDateString(startDate) ? startDate : "";
+  let end = isDateString(endDate) ? endDate : "";
+
+  if (!start || !end) {
+    return null;
+  }
+  if (start > end) {
+    [start, end] = [end, start];
+  }
+
+  return { startDate: start, endDate: end };
+}
+
+function readStoredDateRange() {
+  try {
+    const stored = JSON.parse(window.localStorage.getItem(dateRangeStorageKey) || "null");
+    return normalizeDateRange(stored?.startDate, stored?.endDate);
+  } catch (_error) {
+    return null;
+  }
+}
+
+function saveDateRange(range) {
+  window.localStorage.setItem(dateRangeStorageKey, JSON.stringify(range));
+}
+
+function dateRangeSearchParams(extra = {}) {
+  const params = new URLSearchParams(extra);
+  if (selectedDateRange?.startDate && selectedDateRange?.endDate) {
+    params.set("startDate", selectedDateRange.startDate);
+    params.set("endDate", selectedDateRange.endDate);
+  }
+  return params;
+}
+
+function apiPathWithDateRange(path, extra = {}) {
+  const params = dateRangeSearchParams(extra);
+  const query = params.toString();
+  return query ? `${path}?${query}` : path;
+}
+
+function updateDateRangeControls() {
+  dateRangeStartInputs.forEach((input) => {
+    input.value = selectedDateRange?.startDate || "";
+    input.removeAttribute("min");
+    input.removeAttribute("max");
   });
+  dateRangeEndInputs.forEach((input) => {
+    input.value = selectedDateRange?.endDate || "";
+    input.removeAttribute("min");
+    input.removeAttribute("max");
+  });
+}
+
+async function applyDateRange(range) {
+  selectedDateRange = range;
+  saveDateRange(range);
+  updateDateRangeControls();
+  await refreshScopedSections();
+}
+
+async function initializeDateRange() {
+  try {
+    availableDateRange = await requestJson("/api/dashboard/date-range");
+  } catch (_error) {
+    const today = localToday();
+    availableDateRange = {
+      minDate: shiftDate(today, -29),
+      maxDate: today,
+      defaultStartDate: shiftDate(today, -6),
+      defaultEndDate: today,
+    };
+  }
+
+  selectedDateRange = readStoredDateRange() || {
+    startDate: availableDateRange.defaultStartDate,
+    endDate: availableDateRange.defaultEndDate,
+  };
+  updateDateRangeControls();
 }
 
 function accountDisplayName(account) {
@@ -259,13 +417,39 @@ function notesForScope(notes = []) {
   return notes.filter((note) => Number(note.account_id) === accountId);
 }
 
+function noteCoverageForScope() {
+  const accounts = Array.isArray(currentNoteCoverage?.accounts) ? currentNoteCoverage.accounts : [];
+  const accountId = selectedAccountId();
+  if (accountId) {
+    const account = accounts.find((item) => Number(item.account_id) === accountId);
+    return account ? normalizeNoteCoverage(account) : null;
+  }
+
+  const normalized = accounts.map(normalizeNoteCoverage);
+  if (!normalized.length) {
+    return null;
+  }
+
+  return normalized.reduce((summary, account) => ({
+    total_note_count: summary.total_note_count + account.total_note_count,
+    range_note_count: summary.range_note_count + account.range_note_count,
+    first_published_at: minDateText(summary.first_published_at, account.first_published_at),
+    last_published_at: maxDateText(summary.last_published_at, account.last_published_at),
+  }), {
+    total_note_count: 0,
+    range_note_count: 0,
+    first_published_at: "",
+    last_published_at: "",
+  });
+}
+
 function logsForScope(logs = []) {
   const accountId = selectedAccountId();
   if (!accountId) {
     return logs;
   }
 
-  return logs.filter((log) => Number(log.account_id) === accountId);
+  return logs.filter((log) => !log.account_id || Number(log.account_id) === accountId);
 }
 
 function totalsFromAccount(account) {
@@ -379,24 +563,206 @@ function renderScopeTabs(accounts = []) {
   });
 }
 
-refreshButtons.forEach((button) => {
-  button.addEventListener("click", async () => {
-    const originalText = button.textContent;
-    button.disabled = true;
-    button.textContent = "采集中...";
+function isCollectionRunning(job = currentCollectionJob) {
+  return job?.status === "running";
+}
 
-    try {
-      await requestJson("/api/collections/manual", { method: "POST" });
-      button.textContent = "采集完成";
-      await refreshScopedSections();
-    } catch (_error) {
-      button.textContent = "刷新失败";
+function isCollectionTerminal(job = currentCollectionJob) {
+  return ["success", "warning", "error"].includes(job?.status);
+}
+
+function collectionJobKey(job) {
+  if (!job?.id || !job.status) {
+    return "";
+  }
+
+  return `${job.id}:${job.status}`;
+}
+
+function collectionToastType(job) {
+  if (job?.status === "error") {
+    return "error";
+  }
+  if (job?.status === "warning") {
+    return "warning";
+  }
+
+  return "success";
+}
+
+function collectionToastTitle(job) {
+  if (job?.status === "error") {
+    return "采集失败";
+  }
+  if (job?.status === "warning") {
+    return "采集完成，需处理";
+  }
+
+  return "采集成功";
+}
+
+function isFreshCollectionJob(job) {
+  if (!job?.finishedAt) {
+    return false;
+  }
+
+  const finishedAt = new Date(job.finishedAt).getTime();
+  if (!Number.isFinite(finishedAt)) {
+    return false;
+  }
+
+  return Date.now() - finishedAt < 30 * 60 * 1000;
+}
+
+function storageGet(key) {
+  try {
+    return window.localStorage.getItem(key);
+  } catch (_error) {
+    return "";
+  }
+}
+
+function storageSet(key, value) {
+  try {
+    window.localStorage.setItem(key, value);
+  } catch (_error) {
+    // localStorage can be unavailable in private or restricted browser contexts.
+  }
+}
+
+function ensureToastRegion() {
+  let region = document.querySelector("[data-toast-region]");
+  if (region) {
+    return region;
+  }
+
+  region = document.createElement("div");
+  region.className = "toast-region";
+  region.dataset.toastRegion = "";
+  region.setAttribute("aria-live", "polite");
+  region.setAttribute("aria-relevant", "additions");
+  document.body.append(region);
+
+  return region;
+}
+
+function showToast({ title, message, type = "success" }) {
+  const region = ensureToastRegion();
+  const toast = document.createElement("article");
+  const heading = document.createElement("strong");
+  const body = document.createElement("p");
+  const close = document.createElement("button");
+
+  toast.className = `toast ${type}`;
+  heading.textContent = title;
+  body.textContent = message;
+  close.type = "button";
+  close.setAttribute("aria-label", "关闭提示");
+  close.textContent = "×";
+  close.addEventListener("click", () => toast.remove());
+  toast.append(heading, body, close);
+  region.append(toast);
+
+  window.setTimeout(() => {
+    toast.remove();
+  }, 5600);
+}
+
+function setRefreshButtonsCollecting(isCollecting) {
+  refreshButtons.forEach((button) => {
+    if (!button.dataset.idleText) {
+      button.dataset.idleText = button.textContent;
     }
 
-    window.setTimeout(() => {
-      button.disabled = false;
-      button.textContent = originalText;
-    }, 900);
+    button.disabled = isCollecting;
+    button.classList.toggle("is-loading", isCollecting);
+    button.textContent = isCollecting ? "采集中..." : button.dataset.idleText;
+  });
+}
+
+function updateCollectionJobUi(job, options = {}) {
+  const previousJob = currentCollectionJob;
+  currentCollectionJob = job || null;
+  setRefreshButtonsCollecting(isCollectionRunning(currentCollectionJob));
+
+  if (!isCollectionTerminal(currentCollectionJob)) {
+    return;
+  }
+
+  const key = collectionJobKey(currentCollectionJob);
+  if (!key) {
+    return;
+  }
+
+  if (key !== lastCollectionRefreshJobKey && previousJob?.status === "running") {
+    lastCollectionRefreshJobKey = key;
+    refreshScopedSections().catch(() => {});
+  }
+
+  if (!options.notify || !isFreshCollectionJob(currentCollectionJob)) {
+    return;
+  }
+
+  if (storageGet(collectionStatusStorageKey) === key) {
+    return;
+  }
+
+  storageSet(collectionStatusStorageKey, key);
+  showToast({
+    title: collectionToastTitle(currentCollectionJob),
+    message: currentCollectionJob.message || "采集任务已完成。",
+    type: collectionToastType(currentCollectionJob),
+  });
+}
+
+async function pollCollectionStatus(options = {}) {
+  try {
+    const payload = await requestJson("/api/collections/status");
+    updateCollectionJobUi(payload.job, { notify: options.notify !== false });
+  } catch (_error) {
+    if (!isCollectionRunning()) {
+      setRefreshButtonsCollecting(false);
+    }
+  } finally {
+    const delay = isCollectionRunning() ? 2000 : 8000;
+    collectionStatusPollTimer = window.setTimeout(() => {
+      pollCollectionStatus({ notify: true }).catch(() => {});
+    }, delay);
+  }
+}
+
+function requestCollectionStatusUpdate(options = {}) {
+  if (collectionStatusPollTimer) {
+    window.clearTimeout(collectionStatusPollTimer);
+    collectionStatusPollTimer = null;
+  }
+
+  pollCollectionStatus(options).catch(() => {});
+}
+
+refreshButtons.forEach((button) => {
+  button.addEventListener("click", async () => {
+    setRefreshButtonsCollecting(true);
+
+    try {
+      const payload = await requestJson("/api/collections/manual", { method: "POST" });
+      updateCollectionJobUi(payload.job, { notify: false });
+      if (payload.status === "running") {
+        showToast({
+          title: "采集中",
+          message: payload.message || "已有采集任务正在后台运行。",
+          type: "warning",
+        });
+      }
+      requestCollectionStatusUpdate({ notify: true });
+    } catch (error) {
+      setRefreshButtonsCollecting(false);
+      showToast({
+        title: "启动采集失败",
+        message: error.message || "无法启动后台采集任务。",
+        type: "error",
+      });
+    }
   });
 });
 
@@ -756,7 +1122,10 @@ async function loadSchedulerStatus() {
 
   try {
     const payload = await requestJson("/api/scheduler/status");
-    schedulerStatus.textContent = `下次 ${payload.nextRunLabel || "10:00"}`;
+    updateCollectionJobUi(payload.collectionJob, { notify: false });
+    schedulerStatus.textContent = payload.activeCollectionJob
+      ? "后台采集中"
+      : `下次 ${payload.nextRunLabel || "10:00"}`;
   } catch (_error) {
     schedulerStatus.textContent = "每天 10:00";
   }
@@ -915,6 +1284,79 @@ function createSvgNode(name, attrs = {}) {
   return node;
 }
 
+function createChartTooltip(container) {
+  const tooltip = document.createElement("div");
+  tooltip.className = "chart-tooltip";
+  tooltip.hidden = true;
+  tooltip.setAttribute("role", "tooltip");
+  container.append(tooltip);
+  return tooltip;
+}
+
+function renderTooltipContent(tooltip, title, rows = []) {
+  const titleElement = document.createElement("strong");
+  titleElement.textContent = title;
+  const rowElements = rows.map(([label, value]) => {
+    const row = document.createElement("span");
+    const labelElement = document.createElement("em");
+    const valueElement = document.createElement("b");
+    labelElement.textContent = label;
+    valueElement.textContent = value;
+    row.append(labelElement, valueElement);
+    return row;
+  });
+  tooltip.replaceChildren(titleElement, ...rowElements);
+}
+
+function positionChartTooltip(container, tooltip, anchor) {
+  const containerRect = container.getBoundingClientRect();
+  const anchorRect = anchor.getBoundingClientRect();
+  const tooltipRect = tooltip.getBoundingClientRect();
+  const safeInset = 12;
+  const anchorCenter = anchorRect.left + anchorRect.width / 2 - containerRect.left;
+  const left = Math.min(
+    Math.max(anchorCenter, tooltipRect.width / 2 + safeInset),
+    containerRect.width - tooltipRect.width / 2 - safeInset,
+  );
+  const top = Math.max(anchorRect.top - containerRect.top - 10, tooltipRect.height + safeInset);
+
+  tooltip.style.left = `${left}px`;
+  tooltip.style.top = `${top}px`;
+}
+
+function attachChartTooltip({
+  container,
+  tooltip,
+  target,
+  activeElement = target,
+  title,
+  rows,
+}) {
+  function show() {
+    renderTooltipContent(tooltip, title, rows);
+    tooltip.hidden = false;
+    tooltip.classList.add("is-visible");
+    activeElement.classList.add("is-hovered");
+    positionChartTooltip(container, tooltip, target);
+  }
+
+  function hide() {
+    tooltip.classList.remove("is-visible");
+    activeElement.classList.remove("is-hovered");
+    window.setTimeout(() => {
+      if (!tooltip.classList.contains("is-visible")) {
+        tooltip.hidden = true;
+      }
+    }, 120);
+  }
+
+  target.addEventListener("mouseenter", show);
+  target.addEventListener("mousemove", show);
+  target.addEventListener("focus", show);
+  target.addEventListener("mouseleave", hide);
+  target.addEventListener("blur", hide);
+}
+
 function renderInteractionTrend(series = []) {
   if (!interactionTrendChart) {
     return;
@@ -938,7 +1380,7 @@ function renderInteractionTrend(series = []) {
     comments: Number(item.comments || 0),
     interactions: Number(item.interactions || 0),
   }));
-  const width = 640;
+  const width = chartCanvasWidth(points.length, 640, 56);
   const height = 248;
   const padding = { top: 28, right: 24, bottom: 34, left: 36 };
   const chartWidth = width - padding.left - padding.right;
@@ -951,11 +1393,12 @@ function renderInteractionTrend(series = []) {
     const y = padding.top + chartHeight - (point.interactions / maxValue) * chartHeight;
     return { ...point, x, y };
   });
+  const tooltip = createChartTooltip(interactionTrendChart);
 
   const svg = createSvgNode("svg", {
     viewBox: `0 0 ${width} ${height}`,
     role: "img",
-    "aria-label": "真实 7 日互动趋势",
+    "aria-label": "真实互动趋势",
     preserveAspectRatio: "none",
   });
   [0, 0.5, 1].forEach((ratio) => {
@@ -982,33 +1425,49 @@ function renderInteractionTrend(series = []) {
       r: 5,
       class: "chart-point",
     });
-    const title = createSvgNode("title");
-    title.textContent = `${point.date} 互动 ${formatNumber(point.interactions)}：点赞 ${formatNumber(point.likes)}，收藏 ${formatNumber(point.collections)}，评论 ${formatNumber(point.comments)}`;
-    circle.append(title);
-    svg.append(circle);
+    const hitArea = createSvgNode("circle", {
+      cx: point.x,
+      cy: point.y,
+      r: 15,
+      class: "chart-hit-area",
+      tabindex: 0,
+      "aria-label": `${displayDateLabel(point.date)} 互动 ${formatNumber(point.interactions)}`,
+    });
+    attachChartTooltip({
+      container: interactionTrendChart,
+      tooltip,
+      target: hitArea,
+      activeElement: circle,
+      title: displayDateLabel(point.date),
+      rows: [
+        ["互动", formatNumber(point.interactions)],
+        ["点赞", formatNumber(point.likes)],
+        ["收藏", formatNumber(point.collections)],
+        ["评论", formatNumber(point.comments)],
+      ],
+    });
+    svg.append(circle, hitArea);
   });
 
-  const firstLabel = createSvgNode("text", {
-    x: padding.left,
-    y: height - 12,
-    class: "chart-axis-label",
+  coordinates.forEach((point, index) => {
+    const label = createSvgNode("text", {
+      x: point.x,
+      y: height - 12,
+      "text-anchor": index === 0 ? "start" : index === coordinates.length - 1 ? "end" : "middle",
+      class: "chart-axis-label",
+    });
+    label.textContent = compactDateLabel(point.date);
+    svg.append(label);
   });
-  firstLabel.textContent = points[0].date.slice(5);
-  const lastLabel = createSvgNode("text", {
-    x: width - padding.right,
-    y: height - 12,
-    "text-anchor": "end",
-    class: "chart-axis-label",
-  });
-  lastLabel.textContent = points[points.length - 1].date.slice(5);
-  svg.append(firstLabel, lastLabel);
 
   const latest = points[points.length - 1];
   const totalInteractions = points.reduce((sum, point) => sum + point.interactions, 0);
   const legend = document.createElement("div");
   legend.className = "chart-legend";
-  legend.textContent = `${latest.date.slice(5)} 互动 ${formatNumber(latest.interactions)} · 7日合计 ${formatNumber(totalInteractions)}`;
-  interactionTrendChart.append(svg, legend);
+  legend.textContent = `${latest.date.slice(5)} 互动 ${formatNumber(latest.interactions)} · ${dateRangeLabel()}合计 ${formatNumber(totalInteractions)}`;
+  const scrollPane = createChartScrollPane(width);
+  scrollPane.append(svg);
+  interactionTrendChart.append(scrollPane, legend);
 }
 
 async function loadInteractionTrend() {
@@ -1016,10 +1475,7 @@ async function loadInteractionTrend() {
     return;
   }
 
-  const params = new URLSearchParams({
-    days: "7",
-    metricPeriod: "seven",
-  });
+  const params = dateRangeSearchParams();
   const accountId = selectedAccountId();
   if (accountId) {
     params.set("accountId", String(accountId));
@@ -1040,7 +1496,7 @@ async function loadOverview() {
 
   try {
     const [payload, authPayload] = await Promise.all([
-      requestJson("/api/dashboard/overview"),
+      requestJson(apiPathWithDateRange("/api/dashboard/overview")),
       requestJson("/api/auth/sessions").catch(() => ({ sessions: [] })),
     ]);
     payload.accounts = applyAuthSessions(payload.accounts || [], authPayload.sessions || []);
@@ -1072,7 +1528,7 @@ async function loadOverview() {
       const scopeLabel = selectedAccountId() && scopedAccounts[0]
         ? accountDisplayName(scopedAccounts[0])
         : "全部账号";
-      overviewNotice.textContent = `${scopeLabel} · 阅读/曝光/互动 KPI 主值为 ${metricPeriodLabel(totals)} 累计，辅助行为 ${metricDailyLabel(totals)}增减 · 粉丝为当前总量 · ${metricSourceLabel(totals)} · ${formatNumber(totals.account_count)} 个账号生成快照`;
+      overviewNotice.textContent = `${scopeLabel} · ${dateRangeLabel()} · 阅读/曝光/互动 KPI 主值为所选区间累计，辅助行为 ${metricDailyLabel(totals)}增减 · 粉丝为当前总量 · ${metricSourceLabel(totals)} · ${formatNumber(totals.account_count)} 个账号生成快照`;
     }
     if (accountSummary) {
       accountSummary.replaceChildren(...scopedAccounts.map(createSummaryAccountCard));
@@ -1117,7 +1573,6 @@ function createNoteRow(note) {
     createTableCell(formatMetricValue(note.likes)),
     createTableCell(formatMetricValue(note.collections)),
     createTableCell(formatMetricValue(note.comments)),
-    createTableCell(formatOptionalDelta(note.follower_delta, "")),
   );
 
   return row;
@@ -1139,12 +1594,21 @@ function createEmptyNoteRow(message) {
   const row = document.createElement("tr");
   const cell = document.createElement("td");
 
-  cell.colSpan = 9;
+  cell.colSpan = 8;
   cell.className = "empty-state";
   cell.textContent = message;
   row.append(cell);
 
   return row;
+}
+
+function renderNotesError(message) {
+  if (notesTable) {
+    notesTable.replaceChildren(createEmptyNoteRow(message));
+  }
+  if (notesSummary) {
+    notesSummary.textContent = message;
+  }
 }
 
 function filteredNotes() {
@@ -1169,8 +1633,18 @@ function renderNotesTable() {
 
   const notes = filteredNotes();
   const query = String(notesSearchInput?.value || "").trim();
+  const coverage = noteCoverageForScope();
+  const hiddenByDateRange = currentNotes.length === 0
+    && coverage?.total_note_count > 0
+    && coverage.range_note_count === 0;
   if (notes.length) {
     notesTable.replaceChildren(...notes.map(createNoteRow));
+  } else if (hiddenByDateRange) {
+    const historyRange = noteDateRangeLabel(coverage);
+    const historyText = historyRange ? `，发布时间 ${historyRange}` : "";
+    notesTable.replaceChildren(createEmptyNoteRow(
+      `当前时间区间内暂无发布笔记；本地已采集 ${formatNumber(coverage.total_note_count)} 篇${historyText}，请调整右上角时间区间查看。`,
+    ));
   } else {
     notesTable.replaceChildren(createEmptyNoteRow(query ? "没有匹配的笔记" : "暂无笔记数据"));
   }
@@ -1179,7 +1653,14 @@ function renderNotesTable() {
     const accounts = new Set(notes.map((note) => note.account_name));
     const scopeLabel = selectedAccountId() ? "当前账号" : "全部账号";
     const matchText = query ? ` · 匹配 ${notes.length}/${currentNotes.length} 篇` : "";
-    notesSummary.textContent = `SQLite 数据 · ${scopeLabel} · ${accounts.size} 个账号共 ${notes.length} 篇${matchText} · 默认发布时间倒序`;
+    if (hiddenByDateRange) {
+      const historyRange = noteDateRangeLabel(coverage);
+      const historyText = historyRange ? `（${historyRange}）` : "";
+      notesSummary.textContent = `SQLite 数据 · ${scopeLabel} · ${dateRangeLabel()}发布 · 当前区间 0 篇 · 本地已采集 ${formatNumber(coverage.total_note_count)} 篇${historyText}`;
+      return;
+    }
+
+    notesSummary.textContent = `SQLite 数据 · ${scopeLabel} · ${dateRangeLabel()}发布 · ${accounts.size} 个账号共 ${notes.length} 篇${matchText} · 默认发布时间倒序`;
   }
 }
 
@@ -1188,14 +1669,22 @@ async function loadNotes() {
     return;
   }
 
+  let payload;
   try {
-    const payload = await requestJson("/api/dashboard/notes");
+    payload = await requestJson(apiPathWithDateRange("/api/dashboard/notes"));
+  } catch (_error) {
+    currentNoteCoverage = null;
+    currentNotes = [];
+    renderNotesError("未连接本地 API，暂时无法显示真实数据。");
+    return;
+  }
+
+  try {
+    currentNoteCoverage = payload.coverage || null;
     currentNotes = notesForScope(payload.notes || []);
     renderNotesTable();
-  } catch (_error) {
-    if (notesSummary) {
-      notesSummary.textContent = "未连接本地 API，暂时无法显示真实数据。";
-    }
+  } catch (error) {
+    renderNotesError(`笔记数据渲染异常：${error.message || "未知错误"}`);
   }
 }
 
@@ -1235,6 +1724,11 @@ function renderFollowerGrowthChart(series = []) {
   }));
   const maxAbs = Math.max(1, ...points.map((point) => Math.abs(point.value)));
   const total = points.reduce((sum, point) => sum + point.value, 0);
+  const tooltip = createChartTooltip(trendFollowersChart);
+  const width = chartCanvasWidth(points.length, 640, 48);
+  const scrollPane = createChartScrollPane(width, "bar-chart-scroll-pane");
+  const trackElement = document.createElement("div");
+  trackElement.className = "bar-chart-track";
 
   points.forEach((point) => {
     const item = document.createElement("div");
@@ -1243,24 +1737,37 @@ function renderFollowerGrowthChart(series = []) {
     const bar = document.createElement("span");
     const dateLabel = document.createElement("small");
     const height = Math.max(4, Math.round((Math.abs(point.value) / maxAbs) * 100));
+    const deltaText = signedNumber(point.value);
 
     item.className = "trend-bar-item";
     valueLabel.className = point.value < 0 ? "trend-bar-value negative" : "trend-bar-value";
-    valueLabel.textContent = point.value > 0 ? `+${formatNumber(point.value)}` : formatNumber(point.value);
+    valueLabel.textContent = deltaText;
     track.className = "trend-bar-track";
     bar.className = point.value < 0 ? "trend-bar negative" : "trend-bar";
     bar.style.height = `${height}%`;
-    bar.title = `${point.date} 净涨粉 ${valueLabel.textContent}`;
-    dateLabel.textContent = point.date ? point.date.slice(5) : "--";
+    item.tabIndex = 0;
+    item.setAttribute("aria-label", `${displayDateLabel(point.date)} 净涨粉 ${deltaText}`);
+    dateLabel.textContent = compactDateLabel(point.date);
     track.append(bar);
     item.append(valueLabel, track, dateLabel);
-    trendFollowersChart.append(item);
+    attachChartTooltip({
+      container: trendFollowersChart,
+      tooltip,
+      target: item,
+      activeElement: bar,
+      title: displayDateLabel(point.date),
+      rows: [
+        ["净涨粉", deltaText],
+      ],
+    });
+    trackElement.append(item);
   });
 
   const legend = document.createElement("p");
   legend.className = "bar-chart-legend";
   legend.textContent = `${points[0].date.slice(5)} 至 ${points[points.length - 1].date.slice(5)} · 净增长 ${total > 0 ? "+" : ""}${formatNumber(total)}`;
-  trendFollowersChart.append(legend);
+  scrollPane.append(trackElement);
+  trendFollowersChart.append(scrollPane, legend);
 }
 
 function renderExposureReadChart(series = []) {
@@ -1284,7 +1791,7 @@ function renderExposureReadChart(series = []) {
     reads: Number(item.reads || 0),
     impressions: Number(item.impressions || 0),
   }));
-  const width = 640;
+  const width = chartCanvasWidth(points.length, 640, 56);
   const height = 300;
   const padding = { top: 28, right: 24, bottom: 42, left: 36 };
   const chartWidth = width - padding.left - padding.right;
@@ -1307,6 +1814,7 @@ function renderExposureReadChart(series = []) {
 
   const impressionCoords = coordinates("impressions");
   const readCoords = coordinates("reads");
+  const tooltip = createChartTooltip(trendImpressionsChart);
   const svg = createSvgNode("svg", {
     viewBox: `0 0 ${width} ${height}`,
     role: "img",
@@ -1335,8 +1843,8 @@ function renderExposureReadChart(series = []) {
   }));
 
   [
-    { coords: impressionCoords, label: "曝光", className: "chart-point" },
-    { coords: readCoords, label: "阅读", className: "chart-point secondary" },
+    { coords: impressionCoords, label: "曝光", className: "chart-point", seriesKey: "impressions" },
+    { coords: readCoords, label: "阅读", className: "chart-point secondary", seriesKey: "reads" },
   ].forEach((group) => {
     group.coords.forEach((point) => {
       const circle = createSvgNode("circle", {
@@ -1345,34 +1853,48 @@ function renderExposureReadChart(series = []) {
         r: 4,
         class: group.className,
       });
-      const title = createSvgNode("title");
-      title.textContent = `${point.date} ${group.label} ${formatNumber(point.value)}`;
-      circle.append(title);
-      svg.append(circle);
+      const hitArea = createSvgNode("circle", {
+        cx: point.x,
+        cy: point.y,
+        r: 14,
+        class: "chart-hit-area",
+        tabindex: 0,
+        "aria-label": `${displayDateLabel(point.date)} ${group.label} ${formatNumber(point.value)}`,
+      });
+      attachChartTooltip({
+        container: trendImpressionsChart,
+        tooltip,
+        target: hitArea,
+        activeElement: circle,
+        title: displayDateLabel(point.date),
+        rows: [
+          [group.label, formatNumber(point.value)],
+          [group.seriesKey === "impressions" ? "阅读" : "曝光", formatNumber(group.seriesKey === "impressions" ? point.reads : point.impressions)],
+        ],
+      });
+      svg.append(circle, hitArea);
     });
   });
 
-  const firstLabel = createSvgNode("text", {
-    x: padding.left,
-    y: height - 12,
-    class: "chart-axis-label",
+  impressionCoords.forEach((point, index) => {
+    const label = createSvgNode("text", {
+      x: point.x,
+      y: height - 12,
+      "text-anchor": index === 0 ? "start" : index === impressionCoords.length - 1 ? "end" : "middle",
+      class: "chart-axis-label",
+    });
+    label.textContent = compactDateLabel(point.date);
+    svg.append(label);
   });
-  firstLabel.textContent = points[0].date.slice(5);
-  const lastLabel = createSvgNode("text", {
-    x: width - padding.right,
-    y: height - 12,
-    "text-anchor": "end",
-    class: "chart-axis-label",
-  });
-  lastLabel.textContent = points[points.length - 1].date.slice(5);
-  svg.append(firstLabel, lastLabel);
 
   const totalReads = points.reduce((sum, point) => sum + point.reads, 0);
   const totalImpressions = points.reduce((sum, point) => sum + point.impressions, 0);
   const legend = document.createElement("div");
   legend.className = "chart-legend split";
   legend.innerHTML = `<span>曝光 ${formatNumber(totalImpressions)}</span><span>阅读 ${formatNumber(totalReads)}</span>`;
-  trendImpressionsChart.append(svg, legend);
+  const scrollPane = createChartScrollPane(width);
+  scrollPane.append(svg);
+  trendImpressionsChart.append(scrollPane, legend);
 }
 
 async function loadTrends() {
@@ -1381,31 +1903,28 @@ async function loadTrends() {
   }
 
   try {
-    const trendParams = new URLSearchParams(trendRequestParams());
+    const trendParams = dateRangeSearchParams();
     const selectedId = selectedAccountId();
     if (selectedId) {
       trendParams.set("accountId", String(selectedId));
     }
     const [payload, trendPayload] = await Promise.all([
-      requestJson("/api/dashboard/overview"),
+      requestJson(apiPathWithDateRange("/api/dashboard/overview")),
       requestJson(`/api/dashboard/trends?${trendParams.toString()}`),
     ]);
     const { accounts, scopedAccounts, totals } = scopedOverview(payload);
-    const rangeLabel = trendRangeLabel();
     const scopeLabel = selectedAccountId() && scopedAccounts[0]
       ? accountDisplayName(scopedAccounts[0])
       : "全部账号";
     const deltaSuffix = metricDeltaSuffix(totals);
-    const periodLabel = metricPeriodLabel(totals);
     const trendSeries = trendPayload.series || [];
     const trendTotalFollowers = trendSeries.reduce((sum, point) => sum + Number(point.follower_delta || 0), 0);
     const trendTotalReads = trendSeries.reduce((sum, point) => sum + Number(point.reads || 0), 0);
     const trendTotalImpressions = trendSeries.reduce((sum, point) => sum + Number(point.impressions || 0), 0);
     const trendStart = trendSeries[0]?.metric_date?.slice(5) || "";
     const trendEnd = trendSeries[trendSeries.length - 1]?.metric_date?.slice(5) || "";
-    const trendRangeText = trendStart && trendEnd ? `${trendStart} 至 ${trendEnd}` : periodLabel;
+    const trendRangeText = trendStart && trendEnd ? `${trendStart} 至 ${trendEnd}` : dateRangeLabel();
 
-    updateTrendRangeButtons();
     renderFollowerGrowthChart(trendSeries);
     renderExposureReadChart(trendSeries);
     if (trendFollowersTitle) {
@@ -1415,7 +1934,7 @@ async function loadTrends() {
       trendImpressionsTitle.textContent = `${scopeLabel}曝光与阅读`;
     }
     if (trendFollowersSummary) {
-      trendFollowersSummary.textContent = `${rangeLabel}视角 · ${trendRangeText} · ${scopeLabel} 净增长 ${formatDelta(trendTotalFollowers, "")}，共 ${formatNumber(totals.account_count)} 个账号。`;
+      trendFollowersSummary.textContent = `所选区间 · ${dateRangeLabel()} · 有数据日期 ${trendRangeText} · ${scopeLabel} 净增长 ${formatDelta(trendTotalFollowers, "")}，共 ${formatNumber(totals.account_count)} 个账号。`;
     }
     if (trendFollowersBadge) {
       trendFollowersBadge.textContent = formatDelta(trendTotalFollowers, "");
@@ -1424,7 +1943,7 @@ async function loadTrends() {
       trendImpressionsBadge.textContent = formatNumber(trendTotalImpressions);
     }
     if (trendImpressionsSummary) {
-      trendImpressionsSummary.textContent = `${rangeLabel}视角 · ${trendRangeText} · ${scopeLabel} 曝光 ${formatNumber(trendTotalImpressions)}，阅读 ${formatNumber(trendTotalReads)}。`;
+      trendImpressionsSummary.textContent = `所选区间 · ${dateRangeLabel()} · 有数据日期 ${trendRangeText} · ${scopeLabel} 曝光 ${formatNumber(trendTotalImpressions)}，阅读 ${formatNumber(trendTotalReads)}。`;
     }
 
     const cards = scopedAccounts.map((account) => {
@@ -1458,7 +1977,21 @@ async function loadTrends() {
   }
 }
 
-function createTaskStateCard(account, authSession) {
+function collectionStartedLabel(job) {
+  if (!job?.startedAt) {
+    return "正在后台采集";
+  }
+
+  return `${new Date(job.startedAt).toLocaleString("zh-CN", {
+    hour12: false,
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  })} 开始后台采集`;
+}
+
+function createTaskStateCard(account, authSession, collectionJob) {
   const card = document.createElement("article");
   const dot = document.createElement("span");
   const title = document.createElement("h2");
@@ -1466,25 +1999,31 @@ function createTaskStateCard(account, authSession) {
   const status = statusText(account.status);
   const capturedAt = account.lastCollectedAt || "尚未采集";
   const authLabel = authSession ? authSession.label : "登录态未检测";
+  const collecting = isCollectionRunning(collectionJob);
 
   card.className = "panel state-card";
-  dot.className = `status-dot ${authSession ? authStatusClass(authSession.status) : statusClass(account.status)}`;
+  dot.className = `status-dot ${collecting ? "warning" : authSession ? authStatusClass(authSession.status) : statusClass(account.status)}`;
   title.textContent = accountDisplayName(account);
-  description.textContent = `${accountIdText(account)} · ${status} · ${authLabel} · 最近采集：${capturedAt}`;
+  description.textContent = collecting
+    ? `${accountIdText(account)} · 后台采集中 · ${authLabel} · 最近采集：${capturedAt}`
+    : `${accountIdText(account)} · ${status} · ${authLabel} · 最近采集：${capturedAt}`;
   card.append(dot, title, description);
 
   return card;
 }
 
-function createQueueCard(account, authSession) {
+function createQueueCard(account, authSession, collectionJob) {
   const card = document.createElement("article");
   const dot = document.createElement("span");
   const name = document.createElement("strong");
   const description = document.createElement("p");
+  const collecting = isCollectionRunning(collectionJob);
 
-  dot.className = `status-dot ${authSession ? authStatusClass(authSession.status) : statusClass(account.status)}`;
+  dot.className = `status-dot ${collecting ? "warning" : authSession ? authStatusClass(authSession.status) : statusClass(account.status)}`;
   name.textContent = accountDisplayName(account);
-  if (authSession?.status === "session_ready") {
+  if (collecting) {
+    description.textContent = `${accountIdText(account)} · ${collectionStartedLabel(collectionJob)} · ${authSession?.label || "登录态检测中"}`;
+  } else if (authSession?.status === "session_ready") {
     description.textContent = `${accountIdText(account)} · 等待下一次 10:00 自动采集 · ${authSession.label} · ${loginMethodText(account.loginMethod)}`;
   } else if (authSession?.status === "login_in_progress") {
     description.textContent = `${accountIdText(account)} · 人工登录进行中 · 完成后保存 session · ${loginMethodText(account.loginMethod)}`;
@@ -1496,6 +2035,18 @@ function createQueueCard(account, authSession) {
   return card;
 }
 
+function formatLogCreatedAt(log = {}) {
+  const value = log.created_at_local || log.createdAtLocal || log.created_at || log.createdAt || "";
+  if (!value) {
+    return "时间未知";
+  }
+
+  return String(value)
+    .replace("T", " ")
+    .replaceAll("-", "/")
+    .slice(0, 16);
+}
+
 function createLogItem(log) {
   const item = document.createElement("li");
   const dot = document.createElement("span");
@@ -1504,8 +2055,24 @@ function createLogItem(log) {
   const message = document.createElement("p");
 
   dot.className = `timeline-dot ${statusClass(log.level === "success" ? "active" : log.level === "error" ? "error" : "pending")}`;
-  title.textContent = `${log.created_at} · ${log.account_name || "全部账号"}`;
+  title.textContent = `${formatLogCreatedAt(log)} · ${log.account_name || "全部账号"}`;
   message.textContent = log.message;
+  body.append(title, message);
+  item.append(dot, body);
+
+  return item;
+}
+
+function createEmptyLogItem() {
+  const item = document.createElement("li");
+  const dot = document.createElement("span");
+  const body = document.createElement("div");
+  const title = document.createElement("strong");
+  const message = document.createElement("p");
+
+  dot.className = "timeline-dot warning";
+  title.textContent = "暂无采集日志";
+  message.textContent = "点击右上角采集后，这里会显示最近 5 次执行记录。";
   body.append(title, message);
   item.append(dot, body);
 
@@ -1518,12 +2085,14 @@ async function loadTasks() {
   }
 
   try {
-    const [{ accounts }, { logs }, authPayload] = await Promise.all([
+    const [{ accounts }, { logs }, authPayload, collectionPayload] = await Promise.all([
       requestJson("/api/accounts"),
-      requestJson("/api/collection-logs"),
+      requestJson("/api/collection-logs?limit=5"),
       requestJson("/api/auth/sessions"),
+      requestJson("/api/collections/status").catch(() => ({ job: null })),
     ]);
     const authSessions = authPayload.sessions || [];
+    const collectionJob = collectionPayload.job || null;
     const authByKey = new Map(authSessions.map((session) => [session.credentialKey, session]));
     const scopedAccounts = accountsForScope(accounts);
     const scopedAccountIds = new Set(scopedAccounts.map((account) => Number(account.id)));
@@ -1531,12 +2100,17 @@ async function loadTasks() {
       ? authSessions.filter((session) => scopedAccountIds.has(Number(session.accountId)))
       : authSessions;
     const scopedLogs = logsForScope(logs);
+    updateCollectionJobUi(collectionJob, { notify: false });
     if (taskStateGrid) {
-      taskStateGrid.replaceChildren(...scopedAccounts.map((account) => createTaskStateCard(account, authByKey.get(account.credentialKey))));
+      taskStateGrid.replaceChildren(...scopedAccounts.map((account) => (
+        createTaskStateCard(account, authByKey.get(account.credentialKey), collectionJob)
+      )));
     }
     renderScopeTabs(accounts);
     if (taskQueue) {
-      taskQueue.replaceChildren(...scopedAccounts.map((account) => createQueueCard(account, authByKey.get(account.credentialKey))));
+      taskQueue.replaceChildren(...scopedAccounts.map((account) => (
+        createQueueCard(account, authByKey.get(account.credentialKey), collectionJob)
+      )));
     }
     if (authSessionList) {
       authSessionList.replaceChildren(...scopedAuthSessions.map(createAuthSessionItem));
@@ -1544,7 +2118,7 @@ async function loadTasks() {
       scheduleAuthSessionPolling(scopedAuthSessions);
     }
     if (collectionLogs) {
-      collectionLogs.replaceChildren(...scopedLogs.map(createLogItem));
+      collectionLogs.replaceChildren(...(scopedLogs.length ? scopedLogs.map(createLogItem) : [createEmptyLogItem()]));
     }
   } catch (_error) {
     if (collectionLogs) {
@@ -1689,21 +2263,55 @@ if (notesSearchInput) {
   notesSearchInput.addEventListener("input", renderNotesTable);
 }
 
-trendRangeButtons.forEach((button) => {
-  button.addEventListener("click", async () => {
-    selectedTrendRange = button.dataset.trendRange || "7";
-    updateTrendRangeButtons();
-    await loadTrends();
+dateRangeForms.forEach((form) => {
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const startInput = form.querySelector("[data-date-range-start]");
+    const endInput = form.querySelector("[data-date-range-end]");
+    const range = normalizeDateRange(startInput?.value, endInput?.value);
+    const submitButton = form.querySelector('button[type="submit"]');
+    const originalText = submitButton?.textContent || "应用";
+
+    if (!range) {
+      return;
+    }
+
+    if (submitButton) {
+      submitButton.disabled = true;
+      submitButton.textContent = "应用中";
+    }
+
+    try {
+      await applyDateRange(range);
+      if (submitButton) {
+        submitButton.textContent = "已应用";
+      }
+    } finally {
+      window.setTimeout(() => {
+        if (submitButton) {
+          submitButton.disabled = false;
+          submitButton.textContent = originalText;
+        }
+      }, 700);
+    }
   });
 });
 
-loadScopeAccounts();
-loadOverview();
-loadInteractionTrend();
-loadNotes();
-loadTrends();
-loadTasks();
-loadSchedulerStatus();
+async function initializeApp() {
+  await initializeDateRange();
+  requestCollectionStatusUpdate({ notify: true });
+  await loadScopeAccounts();
+  await Promise.all([
+    loadOverview(),
+    loadInteractionTrend(),
+    loadNotes(),
+    loadTrends(),
+    loadTasks(),
+    loadSchedulerStatus(),
+  ]);
+}
+
+initializeApp().catch(() => {});
 
 async function refreshAfterVisibilityChange() {
   const now = Date.now();
@@ -1712,6 +2320,7 @@ async function refreshAfterVisibilityChange() {
   }
 
   lastAutoRefreshAt = now;
+  requestCollectionStatusUpdate({ notify: true });
   await Promise.all([
     loadScopeAccounts(),
     refreshScopedSections(),

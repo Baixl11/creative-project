@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>小红书监控 · 趋势分析</title>
-    <link rel="stylesheet" href="assets/styles.css?v=20260624-kpi-date-format">
+    <link rel="stylesheet" href="assets/styles.css?v=20260626-note-follower-column">
   </head>
   <body>
     <div class="app-shell">
@@ -32,13 +32,23 @@
             <p class="page-subtitle">对比多个账号的粉丝、阅读、曝光和互动指标周期变化。</p>
           </div>
           <div class="topbar-actions">
-            <div class="scope-tabs" aria-label="账号视角">
-              <button class="scope-chip active" data-scope="all">全部账号</button>
+            <div class="control-row primary-controls">
+              <form class="date-range-control" data-date-range-form aria-label="统计时间区间">
+                <label>
+                  <span>开始</span>
+                  <input type="date" data-date-range-start>
+                </label>
+                <label>
+                  <span>结束</span>
+                  <input type="date" data-date-range-end>
+                </label>
+                <button class="button secondary" type="submit">应用</button>
+              </form>
             </div>
-            <div class="segmented">
-              <button class="active" data-trend-range="7">7 日</button>
-              <button data-trend-range="30">30 日</button>
-              <button data-trend-range="all">全部</button>
+            <div class="control-row scope-row">
+              <div class="scope-tabs" aria-label="账号视角">
+                <button class="scope-chip active" data-scope="all">全部账号</button>
+              </div>
             </div>
           </div>
         </header>
@@ -88,6 +98,6 @@
         </section>
       </main>
     </div>
-    <script src="assets/app.js?v=20260624-kpi-date-format"></script>
+    <script src="assets/app.js?v=20260626-note-follower-column"></script>
   </body>
 </html>

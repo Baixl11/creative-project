@@ -7,8 +7,9 @@
   "scripts": {
     "dev": "node --watch src/server.js",
     "start": "node src/server.js",
-    "check": "node --check src/config.js && node --check src/credentials.js && node --check src/authSessions.js && node --check src/collectors/xhsCollector.js && node --check src/scheduler.js && node --check src/server.js && node --check src/database.js && node --check src/repositories/accounts.js && node --check src/repositories/collectionData.js && node --check src/repositories/dashboard.js && node --check assets/app.js && node --check scripts/consistency-check.mjs",
-    "test:consistency": "node scripts/consistency-check.mjs"
+    "check": "node --check src/config.js && node --check src/credentials.js && node --check src/authSessions.js && node --check src/collectors/xhsCollector.js && node --check src/scheduler.js && node --check src/server.js && node --check src/database.js && node --check src/repositories/accounts.js && node --check src/repositories/collectionData.js && node --check src/repositories/dashboard.js && node --check assets/app.js && node --check scripts/consistency-check.mjs && node --check scripts/background-collection-check.mjs && node --check scripts/frontend-reference-check.mjs && node scripts/frontend-reference-check.mjs",
+    "test:consistency": "node scripts/consistency-check.mjs",
+    "test:background-collection": "node scripts/background-collection-check.mjs"
   },
   "dependencies": {
     "express": "^5.1.0",

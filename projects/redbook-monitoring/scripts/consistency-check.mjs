@@ -4,21 +4,23 @@ import { DatabaseSync } from "node:sqlite";
 import { config } from "../src/config.js";
 import { createDashboardRepository } from "../src/repositories/dashboard.js";
 
-const metricKeys = [
-  "followers",
+const aggregateMetricKeys = [
   "reads",
   "impressions",
   "likes",
   "collections",
   "comments",
   "profile_views",
-  "follower_delta",
+];
+
+const dailyMetricKeys = [
   "read_delta",
   "impression_delta",
   "like_delta",
   "collection_delta",
   "comment_delta",
   "profile_view_delta",
+  "follower_delta",
 ];
 
 function assert(condition, message) {
@@ -36,7 +38,10 @@ const dashboardRepository = createDashboardRepository(db);
 const overview = dashboardRepository.overview();
 const notes = dashboardRepository.notes();
 const logs = dashboardRepository.collectionLogs();
-const trends = dashboardRepository.trends({ days: 7, metricPeriod: "seven" });
+const trends = dashboardRepository.trends({
+  startDate: overview.dateRange.startDate,
+  endDate: overview.dateRange.endDate,
+});
 
 const latestAccountRows = db.prepare(`
   SELECT
@@ -47,22 +52,9 @@ const latestAccountRows = db.prepare(`
       ELSE accounts.xhs_name
     END AS name,
     accounts.xhs_account_id,
-    snapshots.followers,
-    snapshots.reads,
-    snapshots.impressions,
-    snapshots.likes,
-    snapshots.collections,
-    snapshots.comments,
-    snapshots.profile_views,
-    snapshots.follower_delta,
-    snapshots.read_delta,
-    snapshots.impression_delta,
-    snapshots.like_delta,
-    snapshots.collection_delta,
-    snapshots.comment_delta,
-    snapshots.profile_view_delta
+    snapshots.followers
   FROM accounts
-  JOIN account_snapshots snapshots ON snapshots.id = (
+  LEFT JOIN account_snapshots snapshots ON snapshots.id = (
     SELECT id
     FROM account_snapshots latest
     WHERE latest.account_id = accounts.id
@@ -71,8 +63,62 @@ const latestAccountRows = db.prepare(`
   )
 `).all();
 
-for (const key of metricKeys) {
-  const expected = latestAccountRows.reduce((total, row) => total + Number(row[key] || 0), 0);
+const range = overview.dateRange;
+const period = overview.totals.metric_source_period;
+const aggregateRows = db.prepare(`
+  SELECT
+    account_id,
+    SUM(reads) AS reads,
+    SUM(impressions) AS impressions,
+    SUM(likes) AS likes,
+    SUM(collections) AS collections,
+    SUM(comments) AS comments,
+    SUM(profile_views) AS profile_views
+  FROM account_daily_metrics
+  WHERE metric_period = ?
+    AND metric_date BETWEEN ? AND ?
+  GROUP BY account_id
+`).all(period, range.startDate, range.endDate);
+
+const latestDailyRows = db.prepare(`
+  WITH latest_dates AS (
+    SELECT account_id, MAX(metric_date) AS metric_date
+    FROM account_daily_metrics
+    WHERE metric_period = ?
+      AND metric_date BETWEEN ? AND ?
+    GROUP BY account_id
+  )
+  SELECT
+    account_daily_metrics.account_id,
+    SUM(reads) AS read_delta,
+    SUM(impressions) AS impression_delta,
+    SUM(likes) AS like_delta,
+    SUM(collections) AS collection_delta,
+    SUM(comments) AS comment_delta,
+    SUM(profile_views) AS profile_view_delta,
+    SUM(follower_delta) AS follower_delta
+  FROM account_daily_metrics
+  JOIN latest_dates
+    ON latest_dates.account_id = account_daily_metrics.account_id
+    AND latest_dates.metric_date = account_daily_metrics.metric_date
+  WHERE account_daily_metrics.metric_period = ?
+  GROUP BY account_daily_metrics.account_id, account_daily_metrics.metric_date
+`).all(period, range.startDate, range.endDate, period);
+
+const aggregateByAccount = new Map(aggregateRows.map((row) => [row.account_id, row]));
+const latestDailyByAccount = new Map(latestDailyRows.map((row) => [row.account_id, row]));
+
+const expectedFollowers = latestAccountRows.reduce((total, row) => total + Number(row.followers || 0), 0);
+assert(Number(overview.totals?.followers || 0) === expectedFollowers, "overview.totals.followers 不一致");
+
+for (const key of aggregateMetricKeys) {
+  const expected = aggregateRows.reduce((total, row) => total + Number(row[key] || 0), 0);
+  const actual = Number(overview.totals?.[key] || 0);
+  assert(actual === expected, `overview.totals.${key} 不一致：${actual} !== ${expected}`);
+}
+
+for (const key of dailyMetricKeys) {
+  const expected = latestDailyRows.reduce((total, row) => total + Number(row[key] || 0), 0);
   const actual = Number(overview.totals?.[key] || 0);
   assert(actual === expected, `overview.totals.${key} 不一致：${actual} !== ${expected}`);
 }
@@ -80,7 +126,7 @@ for (const key of metricKeys) {
 for (const account of overview.accounts) {
   const source = latestAccountRows.find((row) => row.id === account.id);
   if (!source) {
-    for (const key of metricKeys) {
+    for (const key of [...aggregateMetricKeys, ...dailyMetricKeys, "followers"]) {
       assert(
         Number(account[key] || 0) === 0,
         `未采集账号 ${account.id} 不应出现 ${key} 指标`,
@@ -89,9 +135,23 @@ for (const account of overview.accounts) {
     continue;
   }
 
-  for (const key of metricKeys) {
+  assert(
+    Number(account.followers || 0) === Number(source.followers || 0),
+    `overview.accounts[${account.id}].followers 不一致`,
+  );
+
+  const aggregate = aggregateByAccount.get(account.id) || {};
+  for (const key of aggregateMetricKeys) {
     assert(
-      Number(account[key] || 0) === Number(source[key] || 0),
+      Number(account[key] || 0) === Number(aggregate[key] || 0),
+      `overview.accounts[${account.id}].${key} 不一致`,
+    );
+  }
+
+  const latestDaily = latestDailyByAccount.get(account.id) || {};
+  for (const key of dailyMetricKeys) {
+    assert(
+      Number(account[key] || 0) === Number(latestDaily[key] || 0),
       `overview.accounts[${account.id}].${key} 不一致`,
     );
   }
@@ -102,6 +162,11 @@ for (const account of overview.accounts) {
 
 const accountIds = new Set(latestAccountRows.map((row) => row.id));
 const accountXhsIds = new Map(latestAccountRows.map((row) => [row.id, row.xhs_account_id]));
+
+assert(logs.length <= 5, "collectionLogs() 默认应只返回最近 5 条");
+for (const log of logs) {
+  assert(log.created_at_local, `日志 ${log.id} 缺少本地时间字段`);
+}
 
 for (const note of notes) {
   assert(accountIds.has(note.account_id), `笔记 ${note.id} 归属账号不存在`);
@@ -125,11 +190,11 @@ const trendSourceRows = db.prepare(`
     metric_date,
     SUM(likes + collections + comments) AS interactions
   FROM account_daily_metrics
-  WHERE metric_period = 'seven'
+  WHERE metric_period = ?
+    AND metric_date BETWEEN ? AND ?
   GROUP BY metric_date
-  ORDER BY metric_date DESC
-  LIMIT 7
-`).all().reverse();
+  ORDER BY metric_date ASC
+`).all(trends.metricPeriod, trends.startDate, trends.endDate);
 
 if (trendSourceRows.length) {
   assert(trends.series.length === trendSourceRows.length, "趋势 API 点位数量与日指标表不一致");

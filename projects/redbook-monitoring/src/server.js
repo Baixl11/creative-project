@@ -52,6 +52,17 @@ app.get("/api/scheduler/status", (_request, response) => {
   response.json(collectionScheduler.status());
 });
 
+app.get("/api/collections/status", (_request, response) => {
+  response.json(collectionScheduler.collectionStatus());
+});
+
+function dateRangeFromQuery(query) {
+  return {
+    startDate: query.startDate,
+    endDate: query.endDate,
+  };
+}
+
 app.post("/api/auth/sessions/:credentialKey/bootstrap", (request, response, next) => {
   try {
     const account = accountsRepository.findByCredentialKey(request.params.credentialKey);
@@ -121,34 +132,48 @@ app.patch("/api/accounts/:id/default", (request, response, next) => {
   }
 });
 
-app.get("/api/dashboard/overview", (_request, response) => {
-  response.json(dashboardRepository.overview());
+app.get("/api/dashboard/date-range", (request, response) => {
+  response.json(dashboardRepository.dateRange(dateRangeFromQuery(request.query)));
 });
 
-app.get("/api/dashboard/notes", (_request, response) => {
-  response.json({ notes: dashboardRepository.notes() });
+app.get("/api/dashboard/overview", (request, response) => {
+  response.json(dashboardRepository.overview(dateRangeFromQuery(request.query)));
+});
+
+app.get("/api/dashboard/notes", (request, response) => {
+  const dateRange = dateRangeFromQuery(request.query);
+  response.json({
+    notes: dashboardRepository.notes(dateRange),
+    coverage: dashboardRepository.noteCoverage(dateRange),
+  });
 });
 
 app.get("/api/dashboard/trends", (request, response) => {
   response.json(dashboardRepository.trends({
+    ...dateRangeFromQuery(request.query),
     days: request.query.days,
     metricPeriod: request.query.metricPeriod,
     accountId: request.query.accountId ? Number(request.query.accountId) : null,
   }));
 });
 
-app.get("/api/collection-logs", (_request, response) => {
-  response.json({ logs: dashboardRepository.collectionLogs() });
+app.get("/api/collection-logs", (request, response) => {
+  response.json({
+    logs: dashboardRepository.collectionLogs({
+      ...dateRangeFromQuery(request.query),
+      limit: request.query.limit,
+    }),
+  });
 });
 
-app.post("/api/collections/manual", async (_request, response, next) => {
+app.post("/api/collections/manual", (_request, response, next) => {
   try {
-    const log = await collectionScheduler.run("manual");
+    const result = collectionScheduler.trigger("manual");
 
     response.status(202).json({
-      status: log.level === "success" ? "collected" : "needs_attention",
-      message: log.message,
-      log,
+      status: result.accepted ? "started" : "running",
+      message: result.message,
+      job: result.job,
     });
   } catch (error) {
     next(error);

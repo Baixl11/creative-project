@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>小红书监控 · 采集任务</title>
-    <link rel="stylesheet" href="assets/styles.css?v=20260624-kpi-date-format">
+    <link rel="stylesheet" href="assets/styles.css?v=20260626-note-follower-column">
   </head>
   <body>
     <div class="app-shell">
@@ -32,10 +32,25 @@
             <p class="page-subtitle">按账号查看定时任务、手动刷新和登录/采集异常。</p>
           </div>
           <div class="topbar-actions">
-            <div class="scope-tabs" aria-label="账号视角">
-              <button class="scope-chip active" data-scope="all">全部账号</button>
+            <div class="control-row primary-controls">
+              <form class="date-range-control" data-date-range-form aria-label="统计时间区间">
+                <label>
+                  <span>开始</span>
+                  <input type="date" data-date-range-start>
+                </label>
+                <label>
+                  <span>结束</span>
+                  <input type="date" data-date-range-end>
+                </label>
+                <button class="button secondary" type="submit">应用</button>
+              </form>
+              <button class="button primary" data-refresh>立即采集全部</button>
             </div>
-            <button class="button primary" data-refresh>立即采集全部</button>
+            <div class="control-row scope-row">
+              <div class="scope-tabs" aria-label="账号视角">
+                <button class="scope-chip active" data-scope="all">全部账号</button>
+              </div>
+            </div>
           </div>
         </header>
 
@@ -103,6 +118,6 @@
         </section>
       </main>
     </div>
-    <script src="assets/app.js?v=20260624-kpi-date-format"></script>
+    <script src="assets/app.js?v=20260626-note-follower-column"></script>
   </body>
 </html>

@@ -31,10 +31,70 @@ export function createCollectionScheduler({
   collectionDataRepository,
   collectAccount,
   dashboardRepository,
+  listSessions = listAuthSessions,
 }) {
   let timer = null;
   let lastRunAt = null;
   let nextRun = nextDailyRunAt();
+  let jobSequence = 0;
+  let activeJob = null;
+  let lastJob = null;
+
+  function publicLog(log) {
+    if (!log) {
+      return null;
+    }
+
+    return {
+      id: log.id,
+      level: log.level,
+      eventType: log.event_type || log.eventType,
+      message: log.message,
+      createdAt: log.created_at || log.createdAt,
+      accountId: log.account_id || log.accountId || null,
+      accountName: log.account_name || log.accountName || null,
+    };
+  }
+
+  function publicJob(job) {
+    if (!job) {
+      return null;
+    }
+
+    return {
+      id: job.id,
+      reason: job.reason,
+      status: job.status,
+      level: job.level,
+      startedAt: job.startedAt,
+      finishedAt: job.finishedAt,
+      message: job.message,
+      log: publicLog(job.log),
+    };
+  }
+
+  function statusFromLog(log) {
+    if (log?.level === "success") {
+      return "success";
+    }
+    if (log?.level === "warning") {
+      return "warning";
+    }
+
+    return "error";
+  }
+
+  function jobLabel(reason) {
+    return reason === "scheduled" ? "定时" : "手动";
+  }
+
+  function collectedAccountText(account) {
+    const expectedText = Number.isFinite(Number(account.expectedNoteCount))
+      ? `/${account.expectedNoteCount}`
+      : "";
+    const completeText = account.notesComplete ? "" : "，需复核完整性";
+    return `${account.name}（笔记 ${account.noteCount}${expectedText} 篇${completeText}）`;
+  }
 
   function status() {
     return {
@@ -44,12 +104,15 @@ export function createCollectionScheduler({
       lastRunAt: lastRunAt ? lastRunAt.toISOString() : null,
       nextRunAt: nextRun.toISOString(),
       nextRunLabel: formatLocalDateTime(nextRun),
+      activeCollectionJob: publicJob(activeJob),
+      lastCollectionJob: publicJob(lastJob),
+      collectionJob: publicJob(activeJob || lastJob),
     };
   }
 
   async function run(reason = "scheduled") {
     const accounts = accountsRepository.list();
-    const sessions = listAuthSessions(accounts);
+    const sessions = listSessions(accounts);
     const readyCount = sessions.filter((session) => session.status === "session_ready").length;
     const missing = sessions.filter((session) => session.status !== "session_ready");
     const isScheduled = reason === "scheduled";
@@ -91,10 +154,20 @@ export function createCollectionScheduler({
     }
 
     if (failed.length) {
+      const successText = collected.length
+        ? `成功 ${collected.length}/${readyAccounts.length} 个：${collected.map(collectedAccountText).join("、")}`
+        : `成功 0/${readyAccounts.length} 个`;
+      const failedText = `失败 ${failed.length}/${readyAccounts.length} 个：${failed.join("；")}`;
+      const missingText = missing.length
+        ? `；${missing.map((session) => session.accountName).join("、")} 需要人工登录授权`
+        : "";
+
       return dashboardRepository.createCollectionLog({
-        level: "error",
-        eventType: isScheduled ? "scheduled_collect_failed" : "manual_collect_failed",
-        message: `${isScheduled ? "定时" : "手动"}真实采集失败：${failed.join("；")}${missing.length ? `；${missing.map((session) => session.accountName).join("、")} 需要人工登录授权` : ""}`,
+        level: collected.length ? "warning" : "error",
+        eventType: isScheduled
+          ? (collected.length ? "scheduled_partial_failed" : "scheduled_collect_failed")
+          : (collected.length ? "manual_partial_failed" : "manual_collect_failed"),
+        message: `${isScheduled ? "定时" : "手动"}真实采集${collected.length ? "部分完成" : "失败"}：${successText}；${failedText}${missingText}。`,
       });
     }
 
@@ -104,14 +177,82 @@ export function createCollectionScheduler({
       eventType: isScheduled
         ? (missing.length ? "scheduled_partial_collect" : "scheduled_collect")
         : (missing.length ? "manual_partial_collect" : "manual_collect"),
-      message: `${isScheduled ? "定时" : "手动"}真实采集完成：${collected.map((account) => {
-        const expectedText = Number.isFinite(Number(account.expectedNoteCount))
-          ? `/${account.expectedNoteCount}`
-          : "";
-        const completeText = account.notesComplete ? "" : "，需复核完整性";
-        return `${account.name}（笔记 ${account.noteCount}${expectedText} 篇${completeText}）`;
-      }).join("、")} 已写入 SQLite${missing.length ? `；${missing.map((session) => session.accountName).join("、")} 需要人工登录授权` : ""}。`,
+      message: `${isScheduled ? "定时" : "手动"}真实采集完成：${collected.map(collectedAccountText).join("、")} 已写入 SQLite${missing.length ? `；${missing.map((session) => session.accountName).join("、")} 需要人工登录授权` : ""}。`,
     });
+  }
+
+  async function runWithJob(reason = "scheduled") {
+    if (activeJob) {
+      return publicJob(activeJob);
+    }
+
+    const job = {
+      id: ++jobSequence,
+      reason,
+      status: "running",
+      level: "info",
+      startedAt: new Date().toISOString(),
+      finishedAt: null,
+      message: `${jobLabel(reason)}采集正在后台执行。`,
+      log: null,
+    };
+
+    activeJob = job;
+
+    try {
+      const log = await run(reason);
+      job.log = log;
+      job.level = log.level;
+      job.status = statusFromLog(log);
+      job.message = log.message || `${jobLabel(reason)}采集已完成。`;
+    } catch (error) {
+      job.level = "error";
+      job.status = "error";
+      job.message = `${jobLabel(reason)}采集异常：${error.message || "采集失败"}`;
+
+      try {
+        job.log = dashboardRepository.createCollectionLog({
+          level: "error",
+          eventType: reason === "scheduled" ? "scheduled_collect_crashed" : "manual_collect_crashed",
+          message: job.message,
+        });
+      } catch (_logError) {
+        job.log = null;
+      }
+    } finally {
+      job.finishedAt = new Date().toISOString();
+      lastJob = job;
+      activeJob = null;
+    }
+
+    return publicJob(job);
+  }
+
+  function trigger(reason = "manual") {
+    if (activeJob) {
+      return {
+        accepted: false,
+        message: "已有采集任务正在后台运行。",
+        job: publicJob(activeJob),
+      };
+    }
+
+    const running = runWithJob(reason);
+    running.catch(() => {});
+
+    return {
+      accepted: true,
+      message: `${jobLabel(reason)}采集已在后台启动。`,
+      job: publicJob(activeJob),
+    };
+  }
+
+  function collectionStatus() {
+    return {
+      activeJob: publicJob(activeJob),
+      lastJob: publicJob(lastJob),
+      job: publicJob(activeJob || lastJob),
+    };
   }
 
   function scheduleNext() {
@@ -119,7 +260,7 @@ export function createCollectionScheduler({
     const delay = Math.max(1000, nextRun.getTime() - Date.now());
 
     timer = setTimeout(async () => {
-      await run("scheduled");
+      await runWithJob("scheduled");
       scheduleNext();
     }, delay);
   }
@@ -140,9 +281,12 @@ export function createCollectionScheduler({
   }
 
   return {
+    collectionStatus,
     run,
+    runWithJob,
     start,
     status,
     stop,
+    trigger,
   };
 }
