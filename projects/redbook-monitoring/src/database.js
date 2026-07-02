@@ -85,6 +85,28 @@ function migrate(db) {
       created_at TEXT NOT NULL DEFAULT (${nowSql})
     );
 
+    CREATE TABLE IF NOT EXISTS scheduler_settings (
+      id INTEGER PRIMARY KEY CHECK (id = 1),
+      frequency TEXT NOT NULL DEFAULT 'daily',
+      run_time TEXT NOT NULL DEFAULT '10:00',
+      weekday INTEGER NOT NULL DEFAULT 1,
+      month_day INTEGER NOT NULL DEFAULT 1,
+      updated_at TEXT NOT NULL DEFAULT (${nowSql})
+    );
+
+    CREATE TABLE IF NOT EXISTS collection_audits (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+      captured_at TEXT NOT NULL,
+      status TEXT NOT NULL,
+      source_note_count INTEGER NOT NULL DEFAULT 0,
+      stored_note_count INTEGER NOT NULL DEFAULT 0,
+      daily_metric_count INTEGER NOT NULL DEFAULT 0,
+      checked_field_count INTEGER NOT NULL DEFAULT 0,
+      message TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (${nowSql})
+    );
+
     CREATE TABLE IF NOT EXISTS account_daily_metrics (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
@@ -121,6 +143,9 @@ function migrate(db) {
   addColumnIfMissing(db, "note_snapshots", "comments_available", "INTEGER NOT NULL DEFAULT 1");
   addColumnIfMissing(db, "note_snapshots", "follower_delta_available", "INTEGER NOT NULL DEFAULT 1");
   db.exec(`
+    INSERT OR IGNORE INTO scheduler_settings (id, frequency, run_time, weekday, month_day)
+    VALUES (1, 'daily', '10:00', 1, 1);
+
     CREATE UNIQUE INDEX IF NOT EXISTS idx_notes_account_source
     ON notes(account_id, source_note_id)
     WHERE source_note_id IS NOT NULL;
@@ -130,6 +155,9 @@ function migrate(db) {
 
     CREATE INDEX IF NOT EXISTS idx_account_daily_metrics_date
     ON account_daily_metrics(metric_period, metric_date);
+
+    CREATE INDEX IF NOT EXISTS idx_collection_audits_account
+    ON collection_audits(account_id, id DESC);
   `);
 }
 

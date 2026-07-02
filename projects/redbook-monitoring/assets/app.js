@@ -13,7 +13,12 @@ const storageStatus = document.querySelector("[data-storage-status]");
 const credentialsStatus = document.querySelector("[data-credentials-status]");
 const scopeTabs = document.querySelectorAll(".scope-tabs");
 const statusSummary = document.querySelector("[data-status-summary]");
+const overviewStatusTitle = document.querySelector("[data-overview-status-title]");
 const overviewNotice = document.querySelector("[data-overview-notice]");
+const liveSnapshot = document.querySelector("[data-live-snapshot]");
+const liveCapturedAt = document.querySelector("[data-live-captured-at]");
+const liveMetrics = document.querySelector("[data-live-metrics]");
+const integrityStatus = document.querySelector("[data-integrity-status]");
 const accountSummary = document.querySelector("[data-account-summary]");
 const insightList = document.querySelector("[data-insight-list]");
 const interactionTrendChart = document.querySelector("[data-interaction-trend]");
@@ -38,21 +43,38 @@ const collectionLogs = document.querySelector("[data-collection-logs]");
 const authSessionList = document.querySelector("[data-auth-session-list]");
 const authSessionSummary = document.querySelectorAll("[data-auth-session-summary]");
 const schedulerStatus = document.querySelector("[data-scheduler-status]");
+const scheduleDescription = document.querySelector("[data-schedule-description]");
+const scheduleDialog = document.querySelector("[data-schedule-dialog]");
+const scheduleForm = document.querySelector("[data-schedule-form]");
+const scheduleFrequency = document.querySelector("[data-schedule-frequency]");
+const scheduleWeeklyField = document.querySelector("[data-schedule-weekly-field]");
+const scheduleMonthlyField = document.querySelector("[data-schedule-monthly-field]");
+const scheduleFormMessage = document.querySelector("[data-schedule-form-message]");
+const openScheduleDialogButton = document.querySelector("[data-open-schedule-dialog]");
+const closeScheduleDialogButtons = document.querySelectorAll("[data-close-schedule-dialog]");
+const logDialog = document.querySelector("[data-log-dialog]");
+const logDialogSummary = document.querySelector("[data-log-dialog-summary]");
+const collectionLogCount = document.querySelector("[data-collection-log-count]");
+const openLogDialogButton = document.querySelector("[data-open-log-dialog]");
+const closeLogDialogButtons = document.querySelectorAll("[data-close-log-dialog]");
 
 const numberFormatter = new Intl.NumberFormat("zh-CN");
 const datePattern = /^\d{4}-\d{2}-\d{2}$/;
 const dateRangeStorageKey = "redbookMonitor.dateRange";
+const defaultDateRangeDays = 30;
 const collectionStatusStorageKey = "redbookMonitor.collectionStatus.seenJob";
 let authPollTimer = null;
 let collectionStatusPollTimer = null;
 let selectedScope = "all";
 let selectedDateRange = null;
+let selectedDateRangeIsCustom = false;
 let availableDateRange = null;
 let currentNotes = [];
 let currentNoteCoverage = null;
 let lastAutoRefreshAt = 0;
 let currentCollectionJob = null;
 let lastCollectionRefreshJobKey = "";
+let currentSchedulerStatus = null;
 
 function formatNumber(value) {
   return numberFormatter.format(Number(value || 0));
@@ -209,6 +231,15 @@ function dateRangeLabel(range = selectedDateRange) {
   return `${displayDateLabel(range.startDate)} 至 ${displayDateLabel(range.endDate)}`;
 }
 
+function snapshotTimeLabel(value) {
+  const match = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/);
+  if (!match) {
+    return "等待采集";
+  }
+
+  return `${Number(match[2])}月${Number(match[3])}日 ${match[4]}:${match[5]}`;
+}
+
 function noteDateRangeLabel(coverage = {}) {
   const first = coverage.first_published_at || "";
   const last = coverage.last_published_at || "";
@@ -248,7 +279,7 @@ function normalizeDateRange(startDate, endDate) {
 
 function readStoredDateRange() {
   try {
-    const stored = JSON.parse(window.localStorage.getItem(dateRangeStorageKey) || "null");
+    const stored = JSON.parse(window.sessionStorage.getItem(dateRangeStorageKey) || "null");
     return normalizeDateRange(stored?.startDate, stored?.endDate);
   } catch (_error) {
     return null;
@@ -256,7 +287,45 @@ function readStoredDateRange() {
 }
 
 function saveDateRange(range) {
-  window.localStorage.setItem(dateRangeStorageKey, JSON.stringify(range));
+  try {
+    window.sessionStorage.setItem(dateRangeStorageKey, JSON.stringify(range));
+  } catch (_error) {
+    // The selected range still works for this page when storage is unavailable.
+  }
+}
+
+function defaultDateRange() {
+  const endDate = localToday();
+  return {
+    startDate: shiftDate(endDate, -(defaultDateRangeDays - 1)),
+    endDate,
+  };
+}
+
+function refreshRollingDefaultDateRange() {
+  if (selectedDateRangeIsCustom) {
+    return false;
+  }
+
+  const nextRange = defaultDateRange();
+  if (
+    selectedDateRange?.startDate === nextRange.startDate
+    && selectedDateRange?.endDate === nextRange.endDate
+  ) {
+    return false;
+  }
+
+  selectedDateRange = nextRange;
+  updateDateRangeControls();
+  return true;
+}
+
+function removeLegacyStoredDateRange() {
+  try {
+    window.localStorage.removeItem(dateRangeStorageKey);
+  } catch (_error) {
+    // Ignore restricted storage contexts.
+  }
 }
 
 function dateRangeSearchParams(extra = {}) {
@@ -289,28 +358,30 @@ function updateDateRangeControls() {
 
 async function applyDateRange(range) {
   selectedDateRange = range;
+  selectedDateRangeIsCustom = true;
   saveDateRange(range);
   updateDateRangeControls();
   await refreshScopedSections();
 }
 
 async function initializeDateRange() {
+  removeLegacyStoredDateRange();
+
   try {
     availableDateRange = await requestJson("/api/dashboard/date-range");
   } catch (_error) {
-    const today = localToday();
+    const fallbackRange = defaultDateRange();
     availableDateRange = {
-      minDate: shiftDate(today, -29),
-      maxDate: today,
-      defaultStartDate: shiftDate(today, -6),
-      defaultEndDate: today,
+      minDate: fallbackRange.startDate,
+      maxDate: fallbackRange.endDate,
+      defaultStartDate: fallbackRange.startDate,
+      defaultEndDate: fallbackRange.endDate,
     };
   }
 
-  selectedDateRange = readStoredDateRange() || {
-    startDate: availableDateRange.defaultStartDate,
-    endDate: availableDateRange.defaultEndDate,
-  };
+  const storedRange = readStoredDateRange();
+  selectedDateRangeIsCustom = Boolean(storedRange);
+  selectedDateRange = storedRange || defaultDateRange();
   updateDateRangeControls();
 }
 
@@ -478,7 +549,61 @@ function totalsFromAccount(account) {
     period_end: account.period_end,
     daily_metric_date: account.daily_metric_date,
     source_name: account.source_name,
+    captured_at: account.captured_at,
+    live_note_reads: account.live_note_reads,
+    live_note_likes: account.live_note_likes,
+    live_note_collections: account.live_note_collections,
+    live_note_comments: account.live_note_comments,
   };
+}
+
+function renderLiveSnapshot(totals = {}) {
+  if (!liveSnapshot || !liveMetrics || !liveCapturedAt) {
+    return;
+  }
+
+  const metrics = [
+    ["粉丝", totals.followers],
+    ["笔记累计阅读", totals.live_note_reads],
+    ["笔记累计点赞", totals.live_note_likes],
+    ["笔记累计收藏", totals.live_note_collections],
+    ["笔记累计评论", totals.live_note_comments],
+  ];
+
+  liveCapturedAt.textContent = `更新至 ${snapshotTimeLabel(totals.captured_at)}`;
+  liveMetrics.replaceChildren(...metrics.map(([label, value]) => {
+    const card = document.createElement("article");
+    const name = document.createElement("span");
+    const metric = document.createElement("strong");
+    name.textContent = label;
+    metric.textContent = formatNumber(value);
+    card.append(name, metric);
+    return card;
+  }));
+}
+
+function accountAuditStatus(account = {}) {
+  return account.audit_status || account.auditStatus || "";
+}
+
+function renderIntegrityStatus(accounts = []) {
+  if (!integrityStatus) {
+    return;
+  }
+
+  const successCount = accounts.filter((account) => accountAuditStatus(account) === "success").length;
+  const warningCount = accounts.filter((account) => accountAuditStatus(account) === "warning").length;
+  const errorCount = accounts.filter((account) => accountAuditStatus(account) === "error").length;
+  integrityStatus.className = `tag ${errorCount ? "error" : warningCount ? "warning" : successCount === accounts.length && accounts.length ? "success" : ""}`.trim();
+  if (errorCount) {
+    integrityStatus.textContent = `${errorCount} 个账号校验失败`;
+  } else if (warningCount) {
+    integrityStatus.textContent = `${warningCount} 个账号待复核`;
+  } else if (successCount === accounts.length && accounts.length) {
+    integrityStatus.textContent = `${successCount}/${accounts.length} 一致性校验通过`;
+  } else {
+    integrityStatus.textContent = "等待下次采集校验";
+  }
 }
 
 function applyAuthSessions(accounts = [], sessions = []) {
@@ -696,6 +821,7 @@ function updateCollectionJobUi(job, options = {}) {
 
   if (key !== lastCollectionRefreshJobKey && previousJob?.status === "running") {
     lastCollectionRefreshJobKey = key;
+    refreshRollingDefaultDateRange();
     refreshScopedSections().catch(() => {});
   }
 
@@ -1122,12 +1248,16 @@ async function loadSchedulerStatus() {
 
   try {
     const payload = await requestJson("/api/scheduler/status");
+    currentSchedulerStatus = payload;
     updateCollectionJobUi(payload.collectionJob, { notify: false });
     schedulerStatus.textContent = payload.activeCollectionJob
       ? "后台采集中"
-      : `下次 ${payload.nextRunLabel || "10:00"}`;
+      : `下次 ${payload.nextRunLabel || "待计算"}`;
+    if (scheduleDescription) {
+      scheduleDescription.textContent = `${payload.time || "定时计划"}，按账号依次执行，单个账号失败不阻塞其他账号。`;
+    }
   } catch (_error) {
-    schedulerStatus.textContent = "每天 10:00";
+    schedulerStatus.textContent = "计划加载失败";
   }
 }
 
@@ -1357,7 +1487,7 @@ function attachChartTooltip({
   target.addEventListener("blur", hide);
 }
 
-function renderInteractionTrend(series = []) {
+function renderInteractionTrend(series = [], provisional = null) {
   if (!interactionTrendChart) {
     return;
   }
@@ -1365,7 +1495,7 @@ function renderInteractionTrend(series = []) {
   interactionTrendChart.replaceChildren();
   interactionTrendChart.classList.add("real-chart");
 
-  if (!series.length) {
+  if (!series.length && !provisional) {
     const empty = document.createElement("p");
     empty.className = "chart-empty";
     empty.textContent = "暂无真实趋势数据，完成一次采集后生成。";
@@ -1379,18 +1509,32 @@ function renderInteractionTrend(series = []) {
     collections: Number(item.collections || 0),
     comments: Number(item.comments || 0),
     interactions: Number(item.interactions || 0),
+    provisional: false,
   }));
+  if (provisional) {
+    points.push({
+      date: provisional.metric_date,
+      likes: Number(provisional.likes || 0),
+      collections: Number(provisional.collections || 0),
+      comments: Number(provisional.comments || 0),
+      interactions: Number(provisional.interactions || 0),
+      capturedAt: provisional.captured_at || "",
+      provisional: true,
+    });
+  }
   const width = chartCanvasWidth(points.length, 640, 56);
   const height = 248;
   const padding = { top: 28, right: 24, bottom: 34, left: 36 };
   const chartWidth = width - padding.left - padding.right;
   const chartHeight = height - padding.top - padding.bottom;
+  const minValue = Math.min(0, ...points.map((point) => point.interactions));
   const maxValue = Math.max(1, ...points.map((point) => point.interactions));
+  const valueRange = Math.max(1, maxValue - minValue);
   const coordinates = points.map((point, index) => {
     const x = points.length === 1
       ? padding.left + chartWidth / 2
       : padding.left + (chartWidth * index) / (points.length - 1);
-    const y = padding.top + chartHeight - (point.interactions / maxValue) * chartHeight;
+    const y = padding.top + ((maxValue - point.interactions) / valueRange) * chartHeight;
     return { ...point, x, y };
   });
   const tooltip = createChartTooltip(interactionTrendChart);
@@ -1412,18 +1556,27 @@ function renderInteractionTrend(series = []) {
     }));
   });
 
-  const path = coordinates.map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`).join(" ");
+  const officialCoordinates = coordinates.filter((point) => !point.provisional);
+  const path = officialCoordinates.map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`).join(" ");
   svg.append(createSvgNode("path", {
     d: path,
     class: "chart-trend-line",
   }));
+  const provisionalPoint = coordinates.find((point) => point.provisional);
+  const previousPoint = provisionalPoint ? coordinates[coordinates.indexOf(provisionalPoint) - 1] : null;
+  if (provisionalPoint && previousPoint) {
+    svg.append(createSvgNode("path", {
+      d: `M ${previousPoint.x} ${previousPoint.y} L ${provisionalPoint.x} ${provisionalPoint.y}`,
+      class: "chart-trend-line provisional",
+    }));
+  }
 
   coordinates.forEach((point) => {
     const circle = createSvgNode("circle", {
       cx: point.x,
       cy: point.y,
       r: 5,
-      class: "chart-point",
+      class: `chart-point${point.provisional ? " provisional" : ""}`,
     });
     const hitArea = createSvgNode("circle", {
       cx: point.x,
@@ -1431,19 +1584,19 @@ function renderInteractionTrend(series = []) {
       r: 15,
       class: "chart-hit-area",
       tabindex: 0,
-      "aria-label": `${displayDateLabel(point.date)} 互动 ${formatNumber(point.interactions)}`,
+      "aria-label": `${displayDateLabel(point.date)}${point.provisional ? " 截至刷新" : ""} 互动 ${signedNumber(point.interactions)}`,
     });
     attachChartTooltip({
       container: interactionTrendChart,
       tooltip,
       target: hitArea,
       activeElement: circle,
-      title: displayDateLabel(point.date),
+      title: `${displayDateLabel(point.date)}${point.provisional ? ` 截至 ${snapshotTimeLabel(point.capturedAt).split(" ").at(-1)}` : ""}`,
       rows: [
-        ["互动", formatNumber(point.interactions)],
-        ["点赞", formatNumber(point.likes)],
-        ["收藏", formatNumber(point.collections)],
-        ["评论", formatNumber(point.comments)],
+        [point.provisional ? "临时互动变化" : "完整日互动", point.provisional ? signedNumber(point.interactions) : formatNumber(point.interactions)],
+        ["点赞", point.provisional ? signedNumber(point.likes) : formatNumber(point.likes)],
+        ["收藏", point.provisional ? signedNumber(point.collections) : formatNumber(point.collections)],
+        ["评论", point.provisional ? signedNumber(point.comments) : formatNumber(point.comments)],
       ],
     });
     svg.append(circle, hitArea);
@@ -1460,14 +1613,23 @@ function renderInteractionTrend(series = []) {
     svg.append(label);
   });
 
-  const latest = points[points.length - 1];
-  const totalInteractions = points.reduce((sum, point) => sum + point.interactions, 0);
+  const latestOfficial = [...points].reverse().find((point) => !point.provisional);
+  const totalInteractions = points.filter((point) => !point.provisional).reduce((sum, point) => sum + point.interactions, 0);
   const legend = document.createElement("div");
   legend.className = "chart-legend";
-  legend.textContent = `${latest.date.slice(5)} 互动 ${formatNumber(latest.interactions)} · ${dateRangeLabel()}合计 ${formatNumber(totalInteractions)}`;
+  const officialText = latestOfficial
+    ? `${latestOfficial.date.slice(5)} 完整日互动 ${formatNumber(latestOfficial.interactions)} · ${dateRangeLabel()}完整日合计 ${formatNumber(totalInteractions)}`
+    : "暂无完整日互动";
+  const provisionalText = provisionalPoint
+    ? ` · ${provisionalPoint.date.slice(5)} 截至刷新 ${signedNumber(provisionalPoint.interactions)}`
+    : "";
+  legend.textContent = `${officialText}${provisionalText}`;
   const scrollPane = createChartScrollPane(width);
   scrollPane.append(svg);
   interactionTrendChart.append(scrollPane, legend);
+  window.requestAnimationFrame(() => {
+    scrollPane.scrollLeft = scrollPane.scrollWidth;
+  });
 }
 
 async function loadInteractionTrend() {
@@ -1483,7 +1645,7 @@ async function loadInteractionTrend() {
 
   try {
     const payload = await requestJson(`/api/dashboard/trends?${params.toString()}`);
-    renderInteractionTrend(payload.series || []);
+    renderInteractionTrend(payload.series || [], payload.provisional || null);
   } catch (_error) {
     renderInteractionTrend([]);
   }
@@ -1502,8 +1664,8 @@ async function loadOverview() {
     payload.accounts = applyAuthSessions(payload.accounts || [], authPayload.sessions || []);
     const { accounts, scopedAccounts, totals } = scopedOverview(payload);
     const deltaSuffix = metricDeltaSuffix(totals);
-    setKpiCard("followers", totals.followers, totals.follower_delta, deltaSuffix, {
-      deltaText: dailyMetricText(deltaSuffix, totals.follower_delta),
+    setKpiCard("followers", totals.followers, 0, deltaSuffix, {
+      deltaText: `截至 ${snapshotTimeLabel(totals.captured_at)}`,
     });
     setKpiCard("reads", totals.reads, totals.read_delta, deltaSuffix, {
       deltaText: dailyMetricText(deltaSuffix, totals.read_delta),
@@ -1523,12 +1685,17 @@ async function loadOverview() {
     setKpiCard("profileViews", totals.profile_views, totals.profile_view_delta, deltaSuffix, {
       deltaText: dailyMetricText(deltaSuffix, totals.profile_view_delta),
     });
+    renderLiveSnapshot(totals);
+    renderIntegrityStatus(scopedAccounts);
 
     if (overviewNotice) {
       const scopeLabel = selectedAccountId() && scopedAccounts[0]
         ? accountDisplayName(scopedAccounts[0])
         : "全部账号";
-      overviewNotice.textContent = `${scopeLabel} · ${dateRangeLabel()} · 阅读/曝光/互动 KPI 主值为所选区间累计，辅助行为 ${metricDailyLabel(totals)}增减 · 粉丝为当前总量 · ${metricSourceLabel(totals)} · ${formatNumber(totals.account_count)} 个账号生成快照`;
+      overviewNotice.textContent = `${scopeLabel} · 实时笔记快照与账号区间指标为不同口径 · 创作者中心按日统计最新完整日为 ${displayDateLabel(totals.daily_metric_date)} · ${dateRangeLabel()} KPI 为账号级区间累计`;
+    }
+    if (overviewStatusTitle) {
+      overviewStatusTitle.textContent = `数据已更新至 ${snapshotTimeLabel(totals.captured_at)}`;
     }
     if (accountSummary) {
       accountSummary.replaceChildren(...scopedAccounts.map(createSummaryAccountCard));
@@ -1547,6 +1714,17 @@ function createTableCell(...children) {
   const cell = document.createElement("td");
   cell.append(...children);
   return cell;
+}
+
+function noteExposureValue(note) {
+  if (note.impressions !== null && note.impressions !== undefined) {
+    return document.createTextNode(formatNumber(note.impressions));
+  }
+  const unavailable = document.createElement("span");
+  unavailable.className = "metric-unavailable";
+  unavailable.title = "小红书笔记管理列表未提供单篇曝光，旧详情接口当前返回 406。";
+  unavailable.textContent = "官方未提供";
+  return unavailable;
 }
 
 function createNoteRow(note) {
@@ -1569,7 +1747,7 @@ function createNoteRow(note) {
     createTableCell(accountLabel),
     createTableCell(note.published_at),
     createTableCell(formatMetricValue(note.reads), createMiniDelta(note.read_delta)),
-    createTableCell(formatMetricValue(note.impressions), createMiniDelta(note.impression_delta)),
+    createTableCell(noteExposureValue(note)),
     createTableCell(formatMetricValue(note.likes)),
     createTableCell(formatMetricValue(note.collections)),
     createTableCell(formatMetricValue(note.comments)),
@@ -1660,7 +1838,8 @@ function renderNotesTable() {
       return;
     }
 
-    notesSummary.textContent = `SQLite 数据 · ${scopeLabel} · ${dateRangeLabel()}发布 · ${accounts.size} 个账号共 ${notes.length} 篇${matchText} · 默认发布时间倒序`;
+    const latestCapturedAt = notes.map((note) => note.metrics_captured_at || "").sort().at(-1) || "";
+    notesSummary.textContent = `SQLite 数据 · ${scopeLabel} · ${dateRangeLabel()}发布 · ${accounts.size} 个账号共 ${notes.length} 篇${matchText} · 指标为笔记管理最近采集时的当前累计值（${snapshotTimeLabel(latestCapturedAt)}）`;
   }
 }
 
@@ -2000,19 +2179,25 @@ function createTaskStateCard(account, authSession, collectionJob) {
   const capturedAt = account.lastCollectedAt || "尚未采集";
   const authLabel = authSession ? authSession.label : "登录态未检测";
   const collecting = isCollectionRunning(collectionJob);
+  const auditState = accountAuditStatus(account);
+  const auditText = auditState === "success"
+    ? `一致性校验通过 ${account.auditCheckedFieldCount || 0} 项`
+    : auditState === "warning"
+      ? "写入一致，源数据待复核"
+      : auditState === "error" ? "一致性校验失败" : "待下次采集校验";
 
   card.className = "panel state-card";
   dot.className = `status-dot ${collecting ? "warning" : authSession ? authStatusClass(authSession.status) : statusClass(account.status)}`;
   title.textContent = accountDisplayName(account);
   description.textContent = collecting
     ? `${accountIdText(account)} · 后台采集中 · ${authLabel} · 最近采集：${capturedAt}`
-    : `${accountIdText(account)} · ${status} · ${authLabel} · 最近采集：${capturedAt}`;
+    : `${accountIdText(account)} · ${status} · ${authLabel} · ${auditText} · 最近采集：${capturedAt}`;
   card.append(dot, title, description);
 
   return card;
 }
 
-function createQueueCard(account, authSession, collectionJob) {
+function createQueueCard(account, authSession, collectionJob, scheduleText = "已配置计划") {
   const card = document.createElement("article");
   const dot = document.createElement("span");
   const name = document.createElement("strong");
@@ -2024,7 +2209,7 @@ function createQueueCard(account, authSession, collectionJob) {
   if (collecting) {
     description.textContent = `${accountIdText(account)} · ${collectionStartedLabel(collectionJob)} · ${authSession?.label || "登录态检测中"}`;
   } else if (authSession?.status === "session_ready") {
-    description.textContent = `${accountIdText(account)} · 等待下一次 10:00 自动采集 · ${authSession.label} · ${loginMethodText(account.loginMethod)}`;
+    description.textContent = `${accountIdText(account)} · 等待 ${scheduleText} 自动采集 · ${authSession.label} · ${loginMethodText(account.loginMethod)}`;
   } else if (authSession?.status === "login_in_progress") {
     description.textContent = `${accountIdText(account)} · 人工登录进行中 · 完成后保存 session · ${loginMethodText(account.loginMethod)}`;
   } else {
@@ -2072,7 +2257,7 @@ function createEmptyLogItem() {
 
   dot.className = "timeline-dot warning";
   title.textContent = "暂无采集日志";
-  message.textContent = "点击右上角采集后，这里会显示最近 5 次执行记录。";
+  message.textContent = "执行手动或定时采集后，这里会保存完整历史。";
   body.append(title, message);
   item.append(dot, body);
 
@@ -2085,11 +2270,12 @@ async function loadTasks() {
   }
 
   try {
-    const [{ accounts }, { logs }, authPayload, collectionPayload] = await Promise.all([
+    const [{ accounts }, authPayload, collectionPayload, schedulerPayload, logPayload] = await Promise.all([
       requestJson("/api/accounts"),
-      requestJson("/api/collection-logs?limit=5"),
       requestJson("/api/auth/sessions"),
       requestJson("/api/collections/status").catch(() => ({ job: null })),
+      requestJson("/api/scheduler/status"),
+      requestJson("/api/collection-logs?limit=1"),
     ]);
     const authSessions = authPayload.sessions || [];
     const collectionJob = collectionPayload.job || null;
@@ -2099,7 +2285,7 @@ async function loadTasks() {
     const scopedAuthSessions = selectedAccountId()
       ? authSessions.filter((session) => scopedAccountIds.has(Number(session.accountId)))
       : authSessions;
-    const scopedLogs = logsForScope(logs);
+    currentSchedulerStatus = schedulerPayload;
     updateCollectionJobUi(collectionJob, { notify: false });
     if (taskStateGrid) {
       taskStateGrid.replaceChildren(...scopedAccounts.map((account) => (
@@ -2109,7 +2295,7 @@ async function loadTasks() {
     renderScopeTabs(accounts);
     if (taskQueue) {
       taskQueue.replaceChildren(...scopedAccounts.map((account) => (
-        createQueueCard(account, authByKey.get(account.credentialKey), collectionJob)
+        createQueueCard(account, authByKey.get(account.credentialKey), collectionJob, schedulerPayload.time)
       )));
     }
     if (authSessionList) {
@@ -2117,17 +2303,165 @@ async function loadTasks() {
       updateAuthSessionSummary(scopedAuthSessions);
       scheduleAuthSessionPolling(scopedAuthSessions);
     }
-    if (collectionLogs) {
-      collectionLogs.replaceChildren(...(scopedLogs.length ? scopedLogs.map(createLogItem) : [createEmptyLogItem()]));
+    if (collectionLogCount) {
+      collectionLogCount.textContent = `共 ${formatNumber(logPayload.total)} 条`;
     }
   } catch (_error) {
-    if (collectionLogs) {
-      const item = document.createElement("li");
-      item.textContent = "未连接本地 API，暂时无法显示真实数据。";
-      collectionLogs.replaceChildren(item);
+    if (collectionLogCount) {
+      collectionLogCount.textContent = "日志统计失败";
     }
   }
 }
+
+function updateScheduleFrequencyFields() {
+  const frequency = scheduleFrequency?.value || "daily";
+  const weeklyControl = scheduleWeeklyField?.querySelector("select");
+  const monthlyControl = scheduleMonthlyField?.querySelector("input");
+
+  if (scheduleWeeklyField) {
+    scheduleWeeklyField.hidden = frequency !== "weekly";
+  }
+  if (scheduleMonthlyField) {
+    scheduleMonthlyField.hidden = frequency !== "monthly";
+  }
+  if (weeklyControl) {
+    weeklyControl.disabled = frequency !== "weekly";
+  }
+  if (monthlyControl) {
+    monthlyControl.disabled = frequency !== "monthly";
+  }
+}
+
+function populateScheduleForm(status = currentSchedulerStatus) {
+  if (!scheduleForm || !status?.schedule) {
+    return;
+  }
+
+  const { schedule } = status;
+  scheduleForm.elements.namedItem("frequency").value = schedule.frequency || "daily";
+  scheduleForm.elements.namedItem("time").value = schedule.time || "10:00";
+  scheduleForm.elements.namedItem("weekday").value = String(schedule.weekday || 1);
+  scheduleForm.elements.namedItem("monthDay").value = String(schedule.monthDay || 1);
+  updateScheduleFrequencyFields();
+  if (scheduleFormMessage) {
+    scheduleFormMessage.className = "form-tip";
+    scheduleFormMessage.textContent = `当前计划：${status.time || "待配置"}。`;
+  }
+}
+
+async function openScheduleDialog() {
+  if (!scheduleDialog) {
+    return;
+  }
+  await loadSchedulerStatus();
+  populateScheduleForm();
+  scheduleDialog.showModal();
+}
+
+function closeScheduleDialog() {
+  scheduleDialog?.close();
+}
+
+async function loadAllCollectionLogs() {
+  if (!collectionLogs) {
+    return;
+  }
+
+  try {
+    const payload = await requestJson("/api/collection-logs?all=true");
+    const logs = payload.logs || [];
+    collectionLogs.replaceChildren(...(logs.length ? logs.map(createLogItem) : [createEmptyLogItem()]));
+    if (logDialogSummary) {
+      logDialogSummary.textContent = `共 ${formatNumber(payload.total)} 条记录，按执行时间倒序展示。`;
+    }
+    if (collectionLogCount) {
+      collectionLogCount.textContent = `共 ${formatNumber(payload.total)} 条`;
+    }
+  } catch (error) {
+    const item = document.createElement("li");
+    item.textContent = `采集日志加载失败：${error.message}`;
+    collectionLogs.replaceChildren(item);
+    if (logDialogSummary) {
+      logDialogSummary.textContent = "未能读取本地 SQLite 日志。";
+    }
+  }
+}
+
+async function openLogDialog() {
+  if (!logDialog) {
+    return;
+  }
+  logDialog.showModal();
+  await loadAllCollectionLogs();
+}
+
+function closeLogDialog() {
+  logDialog?.close();
+}
+
+scheduleFrequency?.addEventListener("change", updateScheduleFrequencyFields);
+openScheduleDialogButton?.addEventListener("click", () => {
+  openScheduleDialog().catch(() => {});
+});
+closeScheduleDialogButtons.forEach((button) => {
+  button.addEventListener("click", closeScheduleDialog);
+});
+scheduleDialog?.addEventListener("click", (event) => {
+  if (event.target === scheduleDialog) {
+    closeScheduleDialog();
+  }
+});
+scheduleForm?.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const formData = new FormData(scheduleForm);
+  const submitButton = scheduleForm.querySelector('button[type="submit"]');
+
+  if (submitButton) {
+    submitButton.disabled = true;
+    submitButton.textContent = "保存中";
+  }
+
+  try {
+    const payload = await requestJson("/api/scheduler/settings", {
+      method: "PUT",
+      body: JSON.stringify({
+        frequency: String(formData.get("frequency") || "daily"),
+        time: String(formData.get("time") || "10:00"),
+        weekday: Number(formData.get("weekday") || currentSchedulerStatus?.schedule?.weekday || 1),
+        monthDay: Number(formData.get("monthDay") || currentSchedulerStatus?.schedule?.monthDay || 1),
+      }),
+    });
+    currentSchedulerStatus = payload;
+    await Promise.all([loadSchedulerStatus(), loadTasks()]);
+    showToast({
+      title: "采集计划已更新",
+      message: `${payload.time}，下次执行 ${payload.nextRunLabel}。`,
+    });
+    closeScheduleDialog();
+  } catch (error) {
+    if (scheduleFormMessage) {
+      scheduleFormMessage.className = "form-tip error";
+      scheduleFormMessage.textContent = error.message;
+    }
+  } finally {
+    if (submitButton) {
+      submitButton.disabled = false;
+      submitButton.textContent = "保存计划";
+    }
+  }
+});
+
+openLogDialogButton?.addEventListener("click", () => {
+  openLogDialog().catch(() => {});
+});
+closeLogDialogButtons.forEach((button) => {
+  button.addEventListener("click", closeLogDialog);
+});
+logDialog?.addEventListener("click", (event) => {
+  if (event.target === logDialog) {
+    closeLogDialog();
+  }
+});
 
 if (accountForm && accountList) {
   updateLoginMethodFields();
@@ -2320,6 +2654,7 @@ async function refreshAfterVisibilityChange() {
   }
 
   lastAutoRefreshAt = now;
+  refreshRollingDefaultDateRange();
   requestCollectionStatusUpdate({ notify: true });
   await Promise.all([
     loadScopeAccounts(),

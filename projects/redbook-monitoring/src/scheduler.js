@@ -1,18 +1,65 @@
 import { listAuthSessions } from "./authSessions.js";
+import { defaultSchedulerSettings, normalizeSchedulerSettings } from "./repositories/schedulerSettings.js";
 
-const oneDayMs = 24 * 60 * 60 * 1000;
-const defaultHour = 10;
-const defaultMinute = 0;
+const maxTimerDelay = 2147483647;
+const weekdayLabels = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"];
 
-export function nextDailyRunAt(now = new Date(), hour = defaultHour, minute = defaultMinute) {
+function timeParts(time) {
+  return time.split(":").map(Number);
+}
+
+function daysInMonth(year, month) {
+  return new Date(year, month + 1, 0).getDate();
+}
+
+export function nextScheduledRunAt(now = new Date(), input = defaultSchedulerSettings) {
+  const schedule = normalizeSchedulerSettings(input);
+  const [hour, minute] = timeParts(schedule.time);
   const next = new Date(now);
-  next.setHours(hour, minute, 0, 0);
+  next.setSeconds(0, 0);
 
+  if (schedule.frequency === "daily") {
+    next.setHours(hour, minute, 0, 0);
+    if (next <= now) {
+      next.setDate(next.getDate() + 1);
+    }
+    return next;
+  }
+
+  if (schedule.frequency === "weekly") {
+    const targetDay = schedule.weekday % 7;
+    const daysAhead = (targetDay - next.getDay() + 7) % 7;
+    next.setDate(next.getDate() + daysAhead);
+    next.setHours(hour, minute, 0, 0);
+    if (next <= now) {
+      next.setDate(next.getDate() + 7);
+    }
+    return next;
+  }
+
+  const setMonthlyCandidate = (year, month) => {
+    next.setFullYear(year, month, Math.min(schedule.monthDay, daysInMonth(year, month)));
+    next.setHours(hour, minute, 0, 0);
+  };
+
+  setMonthlyCandidate(now.getFullYear(), now.getMonth());
   if (next <= now) {
-    next.setTime(next.getTime() + oneDayMs);
+    const nextMonth = now.getMonth() + 1;
+    setMonthlyCandidate(now.getFullYear() + Math.floor(nextMonth / 12), nextMonth % 12);
   }
 
   return next;
+}
+
+export function scheduleLabel(input = defaultSchedulerSettings) {
+  const schedule = normalizeSchedulerSettings(input);
+  if (schedule.frequency === "weekly") {
+    return `每${weekdayLabels[schedule.weekday - 1]} ${schedule.time}`;
+  }
+  if (schedule.frequency === "monthly") {
+    return `每月 ${schedule.monthDay} 日 ${schedule.time}`;
+  }
+  return `每天 ${schedule.time}`;
 }
 
 function formatLocalDateTime(date) {
@@ -31,11 +78,13 @@ export function createCollectionScheduler({
   collectionDataRepository,
   collectAccount,
   dashboardRepository,
+  scheduleRepository = null,
   listSessions = listAuthSessions,
 }) {
   let timer = null;
   let lastRunAt = null;
-  let nextRun = nextDailyRunAt();
+  let schedule = scheduleRepository?.get() || { ...defaultSchedulerSettings };
+  let nextRun = nextScheduledRunAt(new Date(), schedule);
   let jobSequence = 0;
   let activeJob = null;
   let lastJob = null;
@@ -93,13 +142,17 @@ export function createCollectionScheduler({
       ? `/${account.expectedNoteCount}`
       : "";
     const completeText = account.notesComplete ? "" : "，需复核完整性";
-    return `${account.name}（笔记 ${account.noteCount}${expectedText} 篇${completeText}）`;
+    const auditText = account.audit?.status === "success"
+      ? `，${account.audit.checkedFieldCount} 项一致性校验通过`
+      : "，写入校验通过但源数据待复核";
+    return `${account.name}（笔记 ${account.noteCount}${expectedText} 篇${completeText}${auditText}）`;
   }
 
   function status() {
     return {
       enabled: true,
-      time: "每天 10:00",
+      time: scheduleLabel(schedule),
+      schedule: { ...schedule },
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "local",
       lastRunAt: lastRunAt ? lastRunAt.toISOString() : null,
       nextRunAt: nextRun.toISOString(),
@@ -118,7 +171,7 @@ export function createCollectionScheduler({
     const isScheduled = reason === "scheduled";
 
     lastRunAt = new Date();
-    nextRun = nextDailyRunAt(lastRunAt);
+    nextRun = nextScheduledRunAt(lastRunAt, schedule);
 
     if (!readyCount) {
       return dashboardRepository.createCollectionLog({
@@ -140,13 +193,14 @@ export function createCollectionScheduler({
     for (const account of readyAccounts) {
       try {
         const data = await collectAccount(account);
-        collectionDataRepository.saveCollectedData(account.id, data);
+        const audit = collectionDataRepository.saveCollectedData(account.id, data);
         collected.push({
           id: account.id,
           name: data.accountName || account.name,
           noteCount: Number(data.noteSync?.actualCount || 0),
           expectedNoteCount: data.noteSync?.expectedCount,
           notesComplete: data.noteSync?.complete !== false,
+          audit,
         });
       } catch (error) {
         failed.push(`${account.name}：${error.message || "采集失败"}`);
@@ -256,13 +310,32 @@ export function createCollectionScheduler({
   }
 
   function scheduleNext() {
-    nextRun = nextDailyRunAt();
-    const delay = Math.max(1000, nextRun.getTime() - Date.now());
+    nextRun = nextScheduledRunAt(new Date(), schedule);
+    const delay = Math.min(maxTimerDelay, Math.max(1000, nextRun.getTime() - Date.now()));
 
     timer = setTimeout(async () => {
+      timer = null;
+      if (Date.now() + 1000 < nextRun.getTime()) {
+        scheduleNext();
+        return;
+      }
       await runWithJob("scheduled");
       scheduleNext();
     }, delay);
+  }
+
+  function updateSchedule(input) {
+    schedule = scheduleRepository
+      ? scheduleRepository.update(input)
+      : normalizeSchedulerSettings(input, schedule);
+    if (timer) {
+      clearTimeout(timer);
+      timer = null;
+      scheduleNext();
+    } else {
+      nextRun = nextScheduledRunAt(new Date(), schedule);
+    }
+    return status();
   }
 
   function start() {
@@ -288,5 +361,6 @@ export function createCollectionScheduler({
     status,
     stop,
     trigger,
+    updateSchedule,
   };
 }

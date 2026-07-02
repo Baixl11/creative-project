@@ -349,6 +349,12 @@ export async function collectXhsAccount(account) {
     ]);
 
     assertLoggedIn(page, homeData.personal);
+    if (!homeData.personal?.data?.user_id && !homeData.personal?.data?.red_num) {
+      throw new Error("未获取到已登录账号标识，本次数据不予写入。");
+    }
+    if (!accountBase?.data?.seven || !accountBase?.data?.thirty) {
+      throw new Error("未完整获取创作者中心 7 日和 30 日账号数据，本次数据不予写入。");
+    }
     const postedNotes = await fetchPostedNotes(page).catch(() => ({ complete: false, notes: [], sourceName: postedNotesSourceName }));
     return parseCollectedData({
       account,

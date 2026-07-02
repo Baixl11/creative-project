@@ -18,6 +18,10 @@ function mapAccount(row) {
     status: row.status,
     isDefault: Boolean(row.is_default),
     lastCollectedAt: row.last_collected_at || null,
+    auditStatus: row.audit_status || null,
+    auditMessage: row.audit_message || null,
+    auditCapturedAt: row.audit_captured_at || null,
+    auditCheckedFieldCount: Number(row.audit_checked_field_count || 0),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -46,7 +50,11 @@ export function createAccountsRepository(db) {
       const rows = db.prepare(`
         SELECT
           accounts.*,
-          MAX(account_snapshots.captured_at) AS last_collected_at
+          MAX(account_snapshots.captured_at) AS last_collected_at,
+          (SELECT status FROM collection_audits WHERE account_id = accounts.id ORDER BY id DESC LIMIT 1) AS audit_status,
+          (SELECT message FROM collection_audits WHERE account_id = accounts.id ORDER BY id DESC LIMIT 1) AS audit_message,
+          (SELECT captured_at FROM collection_audits WHERE account_id = accounts.id ORDER BY id DESC LIMIT 1) AS audit_captured_at,
+          (SELECT checked_field_count FROM collection_audits WHERE account_id = accounts.id ORDER BY id DESC LIMIT 1) AS audit_checked_field_count
         FROM accounts
         LEFT JOIN account_snapshots ON account_snapshots.account_id = accounts.id
         GROUP BY accounts.id
@@ -112,7 +120,11 @@ export function createAccountsRepository(db) {
       const row = db.prepare(`
         SELECT
           accounts.*,
-          MAX(account_snapshots.captured_at) AS last_collected_at
+          MAX(account_snapshots.captured_at) AS last_collected_at,
+          (SELECT status FROM collection_audits WHERE account_id = accounts.id ORDER BY id DESC LIMIT 1) AS audit_status,
+          (SELECT message FROM collection_audits WHERE account_id = accounts.id ORDER BY id DESC LIMIT 1) AS audit_message,
+          (SELECT captured_at FROM collection_audits WHERE account_id = accounts.id ORDER BY id DESC LIMIT 1) AS audit_captured_at,
+          (SELECT checked_field_count FROM collection_audits WHERE account_id = accounts.id ORDER BY id DESC LIMIT 1) AS audit_checked_field_count
         FROM accounts
         LEFT JOIN account_snapshots ON account_snapshots.account_id = accounts.id
         WHERE accounts.id = ?
@@ -126,7 +138,11 @@ export function createAccountsRepository(db) {
       const row = db.prepare(`
         SELECT
           accounts.*,
-          MAX(account_snapshots.captured_at) AS last_collected_at
+          MAX(account_snapshots.captured_at) AS last_collected_at,
+          (SELECT status FROM collection_audits WHERE account_id = accounts.id ORDER BY id DESC LIMIT 1) AS audit_status,
+          (SELECT message FROM collection_audits WHERE account_id = accounts.id ORDER BY id DESC LIMIT 1) AS audit_message,
+          (SELECT captured_at FROM collection_audits WHERE account_id = accounts.id ORDER BY id DESC LIMIT 1) AS audit_captured_at,
+          (SELECT checked_field_count FROM collection_audits WHERE account_id = accounts.id ORDER BY id DESC LIMIT 1) AS audit_checked_field_count
         FROM accounts
         LEFT JOIN account_snapshots ON account_snapshots.account_id = accounts.id
         WHERE accounts.credential_key = ?

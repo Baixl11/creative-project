@@ -8,6 +8,7 @@ import { deleteAccountCredentials, getCredentialStatus, saveAccountCredentials }
 import { createAccountsRepository } from "./repositories/accounts.js";
 import { createCollectionDataRepository } from "./repositories/collectionData.js";
 import { createDashboardRepository } from "./repositories/dashboard.js";
+import { createSchedulerSettingsRepository } from "./repositories/schedulerSettings.js";
 import { createCollectionScheduler } from "./scheduler.js";
 
 const app = express();
@@ -15,11 +16,13 @@ const db = openDatabase();
 const accountsRepository = createAccountsRepository(db);
 const collectionDataRepository = createCollectionDataRepository(db);
 const dashboardRepository = createDashboardRepository(db);
+const scheduleRepository = createSchedulerSettingsRepository(db);
 const collectionScheduler = createCollectionScheduler({
   accountsRepository,
   collectionDataRepository,
   collectAccount: collectXhsAccount,
   dashboardRepository,
+  scheduleRepository,
 });
 
 app.use(express.json());
@@ -50,6 +53,14 @@ app.get("/api/auth/sessions", (_request, response) => {
 
 app.get("/api/scheduler/status", (_request, response) => {
   response.json(collectionScheduler.status());
+});
+
+app.put("/api/scheduler/settings", (request, response, next) => {
+  try {
+    response.json(collectionScheduler.updateSchedule(request.body || {}));
+  } catch (error) {
+    next(error);
+  }
 });
 
 app.get("/api/collections/status", (_request, response) => {
@@ -158,11 +169,15 @@ app.get("/api/dashboard/trends", (request, response) => {
 });
 
 app.get("/api/collection-logs", (request, response) => {
+  const options = {
+    ...dateRangeFromQuery(request.query),
+    limit: request.query.limit,
+    offset: request.query.offset,
+    all: request.query.all === "true",
+  };
   response.json({
-    logs: dashboardRepository.collectionLogs({
-      ...dateRangeFromQuery(request.query),
-      limit: request.query.limit,
-    }),
+    logs: dashboardRepository.collectionLogs(options),
+    total: dashboardRepository.collectionLogCount(options),
   });
 });
 

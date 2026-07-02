@@ -42,6 +42,20 @@ const trends = dashboardRepository.trends({
   startDate: overview.dateRange.startDate,
   endDate: overview.dateRange.endDate,
 });
+if (trends.provisional) {
+  assert(trends.provisional.metric_date === overview.dateRange.endDate, "临时趋势点日期不是当前区间结束日");
+  assert(
+    Number(trends.provisional.interactions) === Number(trends.provisional.likes)
+      + Number(trends.provisional.collections)
+      + Number(trends.provisional.comments),
+    "临时互动点合计不一致",
+  );
+  assert(trends.provisional.source_name === "note_snapshots", "临时趋势点来源不可追溯");
+  assert(
+    Number(trends.provisional.covered_note_count) <= Number(trends.provisional.total_note_count),
+    "临时趋势点覆盖笔记数异常",
+  );
+}
 
 const latestAccountRows = db.prepare(`
   SELECT
@@ -52,7 +66,8 @@ const latestAccountRows = db.prepare(`
       ELSE accounts.xhs_name
     END AS name,
     accounts.xhs_account_id,
-    snapshots.followers
+    snapshots.followers,
+    snapshots.captured_at
   FROM accounts
   LEFT JOIN account_snapshots snapshots ON snapshots.id = (
     SELECT id
@@ -61,6 +76,35 @@ const latestAccountRows = db.prepare(`
     ORDER BY latest.captured_at DESC, latest.id DESC
     LIMIT 1
   )
+`).all();
+
+const latestAuditRows = db.prepare(`
+  SELECT collection_audits.account_id, collection_audits.status, collection_audits.checked_field_count
+  FROM collection_audits
+  WHERE collection_audits.id = (
+    SELECT id FROM collection_audits latest
+    WHERE latest.account_id = collection_audits.account_id
+    ORDER BY latest.id DESC LIMIT 1
+  )
+`).all();
+
+const liveNoteRows = db.prepare(`
+  SELECT
+    notes.account_id,
+    SUM(CASE WHEN snapshots.reads_available = 1 THEN snapshots.reads ELSE 0 END) AS live_note_reads,
+    SUM(CASE WHEN snapshots.likes_available = 1 THEN snapshots.likes ELSE 0 END) AS live_note_likes,
+    SUM(CASE WHEN snapshots.collections_available = 1 THEN snapshots.collections ELSE 0 END) AS live_note_collections,
+    SUM(CASE WHEN snapshots.comments_available = 1 THEN snapshots.comments ELSE 0 END) AS live_note_comments,
+    MAX(snapshots.captured_at) AS captured_at
+  FROM notes
+  JOIN note_snapshots snapshots ON snapshots.id = (
+    SELECT id
+    FROM note_snapshots latest
+    WHERE latest.note_id = notes.id
+    ORDER BY latest.captured_at DESC, latest.id DESC
+    LIMIT 1
+  )
+  GROUP BY notes.account_id
 `).all();
 
 const range = overview.dateRange;
@@ -107,9 +151,22 @@ const latestDailyRows = db.prepare(`
 
 const aggregateByAccount = new Map(aggregateRows.map((row) => [row.account_id, row]));
 const latestDailyByAccount = new Map(latestDailyRows.map((row) => [row.account_id, row]));
+const liveNotesByAccount = new Map(liveNoteRows.map((row) => [row.account_id, row]));
 
 const expectedFollowers = latestAccountRows.reduce((total, row) => total + Number(row.followers || 0), 0);
 assert(Number(overview.totals?.followers || 0) === expectedFollowers, "overview.totals.followers 不一致");
+
+for (const key of ["live_note_reads", "live_note_likes", "live_note_collections", "live_note_comments"]) {
+  const expected = liveNoteRows.reduce((total, row) => total + Number(row[key] || 0), 0);
+  const actual = Number(overview.totals?.[key] || 0);
+  assert(actual === expected, `overview.totals.${key} 不一致：${actual} !== ${expected}`);
+}
+
+const expectedCapturedAt = [...latestAccountRows, ...liveNoteRows]
+  .map((row) => row.captured_at || "")
+  .sort()
+  .at(-1) || "";
+assert(overview.totals.captured_at === expectedCapturedAt, "overview.totals.captured_at 不是最新采集时间");
 
 for (const key of aggregateMetricKeys) {
   const expected = aggregateRows.reduce((total, row) => total + Number(row[key] || 0), 0);
@@ -156,6 +213,14 @@ for (const account of overview.accounts) {
     );
   }
 
+  const liveNotes = liveNotesByAccount.get(account.id) || {};
+  for (const key of ["live_note_reads", "live_note_likes", "live_note_collections", "live_note_comments"]) {
+    assert(
+      Number(account[key] || 0) === Number(liveNotes[key] || 0),
+      `overview.accounts[${account.id}].${key} 不一致`,
+    );
+  }
+
   assert(account.name === source.name, `账号 ${account.id} 昵称未同步`);
   assert(account.xhs_account_id === source.xhs_account_id, `账号 ${account.id} 小红书号未同步`);
 }
@@ -164,6 +229,11 @@ const accountIds = new Set(latestAccountRows.map((row) => row.id));
 const accountXhsIds = new Map(latestAccountRows.map((row) => [row.id, row.xhs_account_id]));
 
 assert(logs.length <= 5, "collectionLogs() 默认应只返回最近 5 条");
+assert(latestAuditRows.length === latestAccountRows.length, "存在账号缺少采集一致性审计");
+for (const audit of latestAuditRows) {
+  assert(audit.status !== "error", `账号 ${audit.account_id} 最近一次一致性校验失败`);
+  assert(Number(audit.checked_field_count || 0) > 0, `账号 ${audit.account_id} 审计字段数为 0`);
+}
 for (const log of logs) {
   assert(log.created_at_local, `日志 ${log.id} 缺少本地时间字段`);
 }
@@ -214,6 +284,8 @@ console.log(JSON.stringify({
   noteCount: notes.length,
   logCount: logs.length,
   trendPointCount: trends.series.length,
+  provisionalTrend: trends.provisional,
+  audits: latestAuditRows,
   accounts: overview.accounts.map((account) => ({
     id: account.id,
     name: account.name,

@@ -73,14 +73,15 @@ function dateBounds(db) {
   const maxNoteDate = normalizeDate(noteRow?.max_date);
   const minMetricDate = normalizeDate(metricRow?.min_date);
   const minNoteDate = normalizeDate(noteRow?.min_date);
-  const defaultEndDate = maxMetricDate || maxNoteDate || localToday();
-  const minAvailableDate = minDate(minMetricDate, minNoteDate) || shiftDate(defaultEndDate, -6);
-  const maxAvailableDate = maxDate(maxMetricDate, maxNoteDate) || defaultEndDate;
+  const defaultEndDate = localToday();
+  const defaultStartDate = shiftDate(defaultEndDate, -29);
+  const minAvailableDate = minDate(minMetricDate, minNoteDate) || defaultStartDate;
+  const maxAvailableDate = maxDate(maxDate(maxMetricDate, maxNoteDate), defaultEndDate) || defaultEndDate;
 
   return {
     minDate: minAvailableDate,
     maxDate: maxAvailableDate,
-    defaultStartDate: shiftDate(defaultEndDate, -6),
+    defaultStartDate,
     defaultEndDate,
   };
 }
@@ -134,7 +135,12 @@ function metricTotals(rows) {
     totals.collection_delta += numberValue(row.collection_delta);
     totals.comment_delta += numberValue(row.comment_delta);
     totals.profile_view_delta += numberValue(row.profile_view_delta);
+    totals.live_note_reads += numberValue(row.live_note_reads);
+    totals.live_note_likes += numberValue(row.live_note_likes);
+    totals.live_note_collections += numberValue(row.live_note_collections);
+    totals.live_note_comments += numberValue(row.live_note_comments);
     totals.daily_metric_date = maxDate(totals.daily_metric_date, row.daily_metric_date);
+    totals.captured_at = maxDate(totals.captured_at, row.captured_at);
     return totals;
   }, {
     account_count: rows.length,
@@ -152,10 +158,15 @@ function metricTotals(rows) {
     collection_delta: 0,
     comment_delta: 0,
     profile_view_delta: 0,
+    live_note_reads: 0,
+    live_note_likes: 0,
+    live_note_collections: 0,
+    live_note_comments: 0,
     metric_period: "custom",
     period_start: rows[0]?.period_start || "",
     period_end: rows[0]?.period_end || "",
     daily_metric_date: "",
+    captured_at: "",
     source_name: "account_daily_metrics",
   });
 }
@@ -178,7 +189,11 @@ export function createDashboardRepository(db) {
           accounts.xhs_account_id,
           accounts.status,
           account_snapshots.captured_at,
-          COALESCE(account_snapshots.followers, 0) AS followers
+          COALESCE(account_snapshots.followers, 0) AS followers,
+          (SELECT status FROM collection_audits WHERE account_id = accounts.id ORDER BY id DESC LIMIT 1) AS audit_status,
+          (SELECT message FROM collection_audits WHERE account_id = accounts.id ORDER BY id DESC LIMIT 1) AS audit_message,
+          (SELECT captured_at FROM collection_audits WHERE account_id = accounts.id ORDER BY id DESC LIMIT 1) AS audit_captured_at,
+          (SELECT checked_field_count FROM collection_audits WHERE account_id = accounts.id ORDER BY id DESC LIMIT 1) AS audit_checked_field_count
         FROM accounts
         LEFT JOIN account_snapshots ON account_snapshots.id = (
           SELECT id
@@ -188,6 +203,25 @@ export function createDashboardRepository(db) {
           LIMIT 1
         )
         ORDER BY accounts.is_default DESC, accounts.id ASC
+      `).all();
+
+      const liveNoteMetrics = db.prepare(`
+        SELECT
+          notes.account_id,
+          SUM(CASE WHEN note_snapshots.reads_available = 1 THEN note_snapshots.reads ELSE 0 END) AS reads,
+          SUM(CASE WHEN note_snapshots.likes_available = 1 THEN note_snapshots.likes ELSE 0 END) AS likes,
+          SUM(CASE WHEN note_snapshots.collections_available = 1 THEN note_snapshots.collections ELSE 0 END) AS collections,
+          SUM(CASE WHEN note_snapshots.comments_available = 1 THEN note_snapshots.comments ELSE 0 END) AS comments,
+          MAX(note_snapshots.captured_at) AS captured_at
+        FROM notes
+        JOIN note_snapshots ON note_snapshots.id = (
+          SELECT id
+          FROM note_snapshots latest_note_snapshot
+          WHERE latest_note_snapshot.note_id = notes.id
+          ORDER BY latest_note_snapshot.captured_at DESC, latest_note_snapshot.id DESC
+          LIMIT 1
+        )
+        GROUP BY notes.account_id
       `).all();
 
       const rangeMetrics = db.prepare(`
@@ -237,9 +271,11 @@ export function createDashboardRepository(db) {
 
       const rangeByAccount = new Map(rangeMetrics.map((row) => [Number(row.account_id), row]));
       const latestByAccount = new Map(latestDailyMetrics.map((row) => [Number(row.account_id), row]));
+      const liveNotesByAccount = new Map(liveNoteMetrics.map((row) => [Number(row.account_id), row]));
       const accounts = latestSnapshots.map((account) => {
         const aggregate = rangeByAccount.get(Number(account.id)) || zeroMetrics();
         const latest = latestByAccount.get(Number(account.id)) || {};
+        const liveNotes = liveNotesByAccount.get(Number(account.id)) || {};
 
         return {
           ...account,
@@ -257,6 +293,11 @@ export function createDashboardRepository(db) {
           collection_delta: numberValue(latest.collection_delta),
           comment_delta: numberValue(latest.comment_delta),
           profile_view_delta: numberValue(latest.profile_view_delta),
+          live_note_reads: numberValue(liveNotes.reads),
+          live_note_likes: numberValue(liveNotes.likes),
+          live_note_collections: numberValue(liveNotes.collections),
+          live_note_comments: numberValue(liveNotes.comments),
+          captured_at: maxDate(account.captured_at, liveNotes.captured_at),
           metric_period: "custom",
           metric_source_period: period,
           period_start: range.startDate,
@@ -374,6 +415,76 @@ export function createDashboardRepository(db) {
         ORDER BY metric_date ASC
       `).all(...seriesParams);
 
+      const today = localToday();
+      let provisional = null;
+      if (today >= range.startDate && today <= range.endDate && series.at(-1)?.metric_date !== today) {
+        const noteAccountFilter = accountId ? "AND notes.account_id = ?" : "";
+        const noteParams = accountId ? [`${today} 00:00:00`, accountId] : [`${today} 00:00:00`];
+        const snapshotRows = db.prepare(`
+          SELECT
+            notes.published_at,
+            current_snapshot.captured_at,
+            current_snapshot.likes,
+            current_snapshot.collections,
+            current_snapshot.comments,
+            current_snapshot.likes_available,
+            current_snapshot.collections_available,
+            current_snapshot.comments_available,
+            previous_snapshot.id AS previous_snapshot_id,
+            previous_snapshot.likes AS previous_likes,
+            previous_snapshot.collections AS previous_collections,
+            previous_snapshot.comments AS previous_comments
+          FROM notes
+          JOIN note_snapshots current_snapshot ON current_snapshot.id = (
+            SELECT id FROM note_snapshots current_latest
+            WHERE current_latest.note_id = notes.id AND current_latest.metrics_available = 1
+            ORDER BY current_latest.captured_at DESC, current_latest.id DESC
+            LIMIT 1
+          )
+          LEFT JOIN note_snapshots previous_snapshot ON previous_snapshot.id = (
+            SELECT id FROM note_snapshots previous_latest
+            WHERE previous_latest.note_id = notes.id
+              AND previous_latest.metrics_available = 1
+              AND previous_latest.captured_at < ?
+            ORDER BY previous_latest.captured_at DESC, previous_latest.id DESC
+            LIMIT 1
+          )
+          WHERE 1 = 1 ${noteAccountFilter}
+        `).all(...noteParams);
+        const currentDayRows = snapshotRows.filter((row) => String(row.captured_at || "").startsWith(today));
+        const eligibleRows = currentDayRows.filter((row) => (
+          row.previous_snapshot_id || row.published_at === today
+        ));
+
+        if (eligibleRows.length) {
+          const delta = eligibleRows.reduce((totals, row) => {
+            if (Number(row.likes_available) === 1) {
+              totals.likes += numberValue(row.likes) - numberValue(row.previous_likes);
+            }
+            if (Number(row.collections_available) === 1) {
+              totals.collections += numberValue(row.collections) - numberValue(row.previous_collections);
+            }
+            if (Number(row.comments_available) === 1) {
+              totals.comments += numberValue(row.comments) - numberValue(row.previous_comments);
+            }
+            totals.captured_at = maxDate(totals.captured_at, row.captured_at);
+            return totals;
+          }, { likes: 0, collections: 0, comments: 0, captured_at: "" });
+          provisional = {
+            metric_date: today,
+            likes: delta.likes,
+            collections: delta.collections,
+            comments: delta.comments,
+            interactions: delta.likes + delta.collections + delta.comments,
+            captured_at: delta.captured_at,
+            source_name: "note_snapshots",
+            provisional: true,
+            covered_note_count: eligibleRows.length,
+            total_note_count: currentDayRows.length,
+          };
+        }
+      }
+
       return {
         metricPeriod: period,
         days: range.days,
@@ -381,14 +492,17 @@ export function createDashboardRepository(db) {
         endDate: range.endDate,
         accountId,
         series,
+        provisional,
       };
     },
 
     collectionLogs(options = {}) {
       const limitValue = Number(options.limit || 5);
       const limit = Number.isFinite(limitValue)
-        ? Math.min(Math.max(Math.trunc(limitValue), 1), 50)
+        ? Math.min(Math.max(Math.trunc(limitValue), 1), 500)
         : 5;
+      const offsetValue = Number(options.offset || 0);
+      const offset = Number.isFinite(offsetValue) ? Math.max(Math.trunc(offsetValue), 0) : 0;
       const startDate = normalizeDate(options.startDate);
       const endDate = normalizeDate(options.endDate);
       const filterStart = startDate && endDate ? minDate(startDate, endDate) : "";
@@ -396,7 +510,11 @@ export function createDashboardRepository(db) {
       const where = filterStart && filterEnd
         ? "WHERE date(collection_logs.created_at, 'localtime') BETWEEN ? AND ?"
         : "";
-      const params = filterStart && filterEnd ? [filterStart, filterEnd, limit] : [limit];
+      const params = filterStart && filterEnd ? [filterStart, filterEnd] : [];
+      const pagination = options.all ? "" : "LIMIT ? OFFSET ?";
+      if (!options.all) {
+        params.push(limit, offset);
+      }
 
       return db.prepare(`
         SELECT
@@ -413,8 +531,25 @@ export function createDashboardRepository(db) {
         LEFT JOIN accounts ON accounts.id = collection_logs.account_id
         ${where}
         ORDER BY collection_logs.id DESC
-        LIMIT ?
+        ${pagination}
       `).all(...params);
+    },
+
+    collectionLogCount(options = {}) {
+      const startDate = normalizeDate(options.startDate);
+      const endDate = normalizeDate(options.endDate);
+      const filterStart = startDate && endDate ? minDate(startDate, endDate) : "";
+      const filterEnd = startDate && endDate ? maxDate(startDate, endDate) : "";
+      const where = filterStart && filterEnd
+        ? "WHERE date(collection_logs.created_at, 'localtime') BETWEEN ? AND ?"
+        : "";
+      const params = filterStart && filterEnd ? [filterStart, filterEnd] : [];
+
+      return Number(db.prepare(`
+        SELECT COUNT(*) AS count
+        FROM collection_logs
+        ${where}
+      `).get(...params).count || 0);
     },
 
     createCollectionLog({ accountId = null, level = "success", eventType, message }) {

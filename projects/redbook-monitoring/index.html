@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>小红书监控 · 账号总览</title>
-    <link rel="stylesheet" href="assets/styles.css?v=20260626-note-follower-column">
+    <link rel="stylesheet" href="assets/styles.css?v=20260630-provisional-trend">
   </head>
   <body>
     <div class="app-shell">
@@ -59,8 +59,28 @@
         </header>
 
         <section class="notice success">
-          <strong>全部账号最近采集完成</strong>
+          <strong data-overview-status-title>全部账号最近采集完成</strong>
           <span data-overview-notice>等待采集后显示最新完整日、周期累计和数据来源。</span>
+        </section>
+
+        <section class="panel live-snapshot-panel" data-live-snapshot>
+          <div class="panel-heading">
+            <div>
+              <h2>本次刷新快照</h2>
+              <p>采集时刻可获取的当前总量，不受上方统计日期限制。</p>
+            </div>
+            <div class="panel-actions">
+              <span class="tag" data-integrity-status>等待一致性校验</span>
+              <span class="tag" data-live-captured-at>等待采集</span>
+            </div>
+          </div>
+          <div class="live-metric-grid" data-live-metrics>
+            <article><span>粉丝</span><strong>-</strong></article>
+            <article><span>笔记累计阅读</span><strong>-</strong></article>
+            <article><span>笔记累计点赞</span><strong>-</strong></article>
+            <article><span>笔记累计收藏</span><strong>-</strong></article>
+            <article><span>笔记累计评论</span><strong>-</strong></article>
+          </div>
         </section>
 
         <section class="kpi-grid" aria-label="核心指标">
@@ -70,32 +90,32 @@
             <span class="delta muted" data-kpi-delta>最新日：0</span>
           </article>
           <article class="kpi-card" data-kpi-card="reads">
-            <p>阅读</p>
+            <p>区间账号阅读</p>
             <strong data-kpi-value>56</strong>
             <span class="delta up" data-kpi-delta>最新日：+2</span>
           </article>
           <article class="kpi-card" data-kpi-card="impressions">
-            <p>曝光</p>
+            <p>区间账号曝光</p>
             <strong data-kpi-value>551</strong>
             <span class="delta up" data-kpi-delta>最新日：+36</span>
           </article>
           <article class="kpi-card" data-kpi-card="likes">
-            <p>点赞</p>
+            <p>区间账号点赞</p>
             <strong data-kpi-value>3</strong>
             <span class="delta muted" data-kpi-delta>最新日：0</span>
           </article>
           <article class="kpi-card" data-kpi-card="collections">
-            <p>收藏</p>
+            <p>区间账号收藏</p>
             <strong data-kpi-value>0</strong>
             <span class="delta muted" data-kpi-delta>最新日：0</span>
           </article>
           <article class="kpi-card" data-kpi-card="comments">
-            <p>评论</p>
+            <p>区间账号评论</p>
             <strong data-kpi-value>3</strong>
             <span class="delta muted" data-kpi-delta>最新日：0</span>
           </article>
           <article class="kpi-card" data-kpi-card="profileViews">
-            <p>主页访问</p>
+            <p>区间主页访问</p>
             <strong data-kpi-value>5</strong>
             <span class="delta muted" data-kpi-delta>最新日：0</span>
           </article>
@@ -155,6 +175,6 @@
         </section>
       </main>
     </div>
-    <script src="assets/app.js?v=20260626-note-follower-column"></script>
+    <script src="assets/app.js?v=20260701-rolling-range"></script>
   </body>
 </html>

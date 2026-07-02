@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>小红书监控 · 采集任务</title>
-    <link rel="stylesheet" href="assets/styles.css?v=20260626-note-follower-column">
+    <link rel="stylesheet" href="assets/styles.css?v=20260630-provisional-trend">
   </head>
   <body>
     <div class="app-shell">
@@ -85,9 +85,12 @@
           <div class="panel-heading">
             <div>
               <h2>账号采集队列</h2>
-              <p>每天 10:00 按账号依次执行，单个账号失败不阻塞其他账号。</p>
+              <p data-schedule-description>按计划依次采集各账号，单个账号失败不阻塞其他账号。</p>
             </div>
-            <span class="tag" data-scheduler-status>每天 10:00</span>
+            <div class="panel-actions">
+              <span class="tag" data-scheduler-status>计划加载中</span>
+              <button class="button secondary" type="button" data-open-schedule-dialog>调整计划</button>
+            </div>
           </div>
           <div class="queue-grid" data-task-queue>
             <article>
@@ -102,22 +105,87 @@
           <div class="panel-heading">
             <div>
               <h2>采集日志</h2>
-              <p>最近 5 次跨账号执行记录。</p>
+              <p>所有采集记录均保存在本地 SQLite，可在独立视图中查看。</p>
             </div>
-            <span class="tag">SQLite 日志</span>
+            <div class="panel-actions">
+              <span class="tag" data-collection-log-count>正在统计</span>
+              <button class="button secondary" type="button" data-open-log-dialog>查看全部日志</button>
+            </div>
           </div>
-          <ol class="timeline" data-collection-logs>
-            <li>
-              <span class="timeline-dot warning"></span>
-              <div>
-                <strong>采集日志加载中</strong>
-                <p>正在读取 SQLite 日志。</p>
-              </div>
-            </li>
-          </ol>
         </section>
+
+        <dialog class="modal" data-schedule-dialog aria-labelledby="schedule-dialog-title">
+          <div class="modal-card">
+            <div class="modal-heading">
+              <div>
+                <p class="eyebrow">自动采集</p>
+                <h2 id="schedule-dialog-title">调整采集计划</h2>
+                <p>时间按 Asia/Shanghai 执行，修改后立即重新计算下次采集。</p>
+              </div>
+              <button class="button secondary" type="button" data-close-schedule-dialog>关闭</button>
+            </div>
+            <form class="form" data-schedule-form>
+              <label>
+                <span>采集周期</span>
+                <select name="frequency" data-schedule-frequency>
+                  <option value="daily">每天</option>
+                  <option value="weekly">每周</option>
+                  <option value="monthly">每月</option>
+                </select>
+              </label>
+              <label>
+                <span>采集时间</span>
+                <input name="time" type="time" step="60" required>
+              </label>
+              <label data-schedule-weekly-field hidden>
+                <span>每周执行日</span>
+                <select name="weekday">
+                  <option value="1">周一</option>
+                  <option value="2">周二</option>
+                  <option value="3">周三</option>
+                  <option value="4">周四</option>
+                  <option value="5">周五</option>
+                  <option value="6">周六</option>
+                  <option value="7">周日</option>
+                </select>
+              </label>
+              <label data-schedule-monthly-field hidden>
+                <span>每月执行日</span>
+                <input name="monthDay" type="number" min="1" max="31" step="1" required>
+                <small>如设为 31 日，小月将在当月最后一天执行。</small>
+              </label>
+              <p class="form-tip" data-schedule-form-message>配置会保存到本地 SQLite。</p>
+              <div class="form-actions">
+                <button class="button secondary" type="button" data-close-schedule-dialog>取消</button>
+                <button class="button primary" type="submit">保存计划</button>
+              </div>
+            </form>
+          </div>
+        </dialog>
+
+        <dialog class="modal logs-modal" data-log-dialog aria-labelledby="log-dialog-title">
+          <div class="modal-card">
+            <div class="modal-heading">
+              <div>
+                <p class="eyebrow">SQLite 日志</p>
+                <h2 id="log-dialog-title">采集日志</h2>
+                <p data-log-dialog-summary>正在读取全部采集历史。</p>
+              </div>
+              <button class="button secondary" type="button" data-close-log-dialog>关闭</button>
+            </div>
+            <ol class="timeline log-dialog-list" data-collection-logs>
+              <li>
+                <span class="timeline-dot warning"></span>
+                <div>
+                  <strong>采集日志加载中</strong>
+                  <p>正在读取 SQLite 日志。</p>
+                </div>
+              </li>
+            </ol>
+          </div>
+        </dialog>
       </main>
     </div>
-    <script src="assets/app.js?v=20260626-note-follower-column"></script>
+    <script src="assets/app.js?v=20260701-rolling-range"></script>
   </body>
 </html>
