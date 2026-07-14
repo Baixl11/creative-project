@@ -5,9 +5,10 @@ source:
   runtime_plan: "runtime-test-plan.md"
 tool:
   preferred: "browser_plugin"
-  fallback: "user_confirmed_manual_browser_or_project_playwright"
-  availability: "failed"
-  failure: "Browser client initialization failed twice with Cannot redefine property: process"
+  selected: "standalone_playwright_1.61_with_local_chrome"
+  fallback: "real_playwright_after_preferred_plugin_failure"
+  availability: "passed_via_selected_tool"
+  preferred_failure: "Browser and Chrome clients failed with Cannot redefine property: process"
 entry:
   kind: "web"
   command: ".venv/bin/streamlit run web_app.py --server.headless true"

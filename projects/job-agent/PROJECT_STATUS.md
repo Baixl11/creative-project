@@ -1,6 +1,6 @@
 # Project Status
 
-Last updated: 2026-04-29
+Last updated: 2026-07-14
 
 ## 当前阶段
 
@@ -24,14 +24,16 @@ Last updated: 2026-04-29
 - 输出体验：中文口语化报告、结构化 bullet 改写建议、证据句解释。
 - Web UI：本地 Streamlit 页面，支持样例、真实样例和上传文件分析。
 - 评测集：高、中、低三组回归样例。
-- 自动化测试：当前 41 个 unittest 通过。
+- 自动化测试：当前 61 个 unittest 通过。
 - Harness：已有任务记录、验证命令、项目规则、架构说明和状态追踪。
 
 ## 当前确认状态
 
-- Web UI 上传入口和按钮已人工检查，当前没有明显问题。
-- 中文 OCR 已通过临时中文 JD 截图 smoke；真实用户截图测试本轮暂时跳过，不作为作品集包装阻塞项。
-- 作品集页面内容正在补充，当前新增 `PORTFOLIO_CASE_STUDY.md` 作为页面稿和截图计划。
+- Web UI 已完成真实 Chrome 交互验证：上传、生成、Markdown/JSON 下载和 Streamlit rerun 结果保留均通过，console/page/network 错误为 0。
+- Web 上传与报告改为单次临时目录，任务结束后清理；下载 JSON 不再暴露服务器绝对路径。
+- 解析、改写和匹配已增加证据保守边界，避免联系方式回流、职责升级和弱同义词重复计分。
+- 中文 OCR 已确认本机存在 `chi_sim+eng`；真实用户截图质量仍需按具体图片人工验收。
+- 项目位于父级 Git monorepo，正式任务使用 `harness/<type>/<slug>` 分支和本地提交。
 
 ## 当前主动暂停
 
@@ -39,32 +41,19 @@ Last updated: 2026-04-29
 - `.env` 应保持 `USE_MOCK_LLM=true`，保证项目零成本、可稳定演示。
 - 后续可恢复 LLM，用于报告总结和简历 bullet 润色，但不阻塞当前作品集交付。
 
-## 接下来 3 天建议
+## 后续建议
 
-### Day 1：演示验收
-
-- Web UI 入口和按钮已完成基本人工检查。
-- 真实 JD 截图 OCR 本轮暂时跳过。
-- 剩余可在截图整理时顺手检查报告展示、下载入口和复制体验。
-
-### Day 2：作品集包装
-
-- 按 `PORTFOLIO_CASE_STUDY.md` 整理页面结构。
-- 截取 Web UI、报告、JSON、评测结果的关键截图。
-- 准备简历里的项目描述和 30 秒/2 分钟介绍。
-
-### Day 3：工程化收尾
-
-- 初始化 git 仓库并形成第一版提交历史。
-- 再跑一次全量验证命令。
-- 决定是否恢复真实 LLM，或把 LLM 放到后续路线图。
+- 按 `PORTFOLIO_CASE_STUDY.md` 更新截图和演示讲稿。
+- 使用真实用户截图继续校验 OCR 清晰度和领域词纠错。
+- 需要真实 LLM 时再确认 API key、成本和失败降级验收标准。
+- 增加 CI、ruff/mypy 和依赖锁定属于下一阶段工程化工作。
 
 ## 总体还差什么
 
 必须补齐：
 
-- 最终作品集截图和演示脚本。
-- Git 仓库初始化与提交历史。
+- 用户对本轮修复结果做最终行为验收。
+- 对外展示前刷新作品集截图和演示脚本。
 
 建议补齐：
 
@@ -88,7 +77,8 @@ Last updated: 2026-04-29
 .venv/bin/python -m unittest discover -s tests
 .venv/bin/python -m app.evaluate --manifest data/eval_cases/manifest.json --output-dir outputs/evaluations
 .venv/bin/python -m py_compile web_app.py
-.venv/bin/python -m app.main --jd data/my_jd.txt --resume data/my_resume.pdf --output outputs/my_report.md --json-output outputs/my_report.json
+.venv/bin/python -m app.main --jd data/demo_jd_cn.txt --resume data/demo_resume_cn.txt --output outputs/demo_cn_report.md --json-output outputs/demo_cn_report.json
+.venv/bin/python .agents/skills/harness-project-bootstrap/scripts/validate_plan.py --plan .harness/bootstrap-plan.yaml --target .
 ```
 
 ## 面试中可以怎么定位

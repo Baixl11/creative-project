@@ -46,6 +46,8 @@ class LLMService:
             raise LLMServiceError(f"LLM request failed with HTTP {exc.code}.") from exc
         except urllib.error.URLError as exc:
             raise LLMServiceError(f"LLM request failed: {exc.reason}") from exc
+        except UnicodeDecodeError as exc:
+            raise LLMServiceError("LLM response was not valid UTF-8.") from exc
         except (TimeoutError, OSError, ValueError) as exc:
             raise LLMServiceError("LLM request could not be completed.") from exc
 

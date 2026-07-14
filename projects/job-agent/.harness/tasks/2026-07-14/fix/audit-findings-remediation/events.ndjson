@@ -6,3 +6,8 @@
 {"time":"2026-07-14T11:50:00+08:00","stage":"coder","actor":"codex","type":"commit_created","message":"核心正确性修复已提交为 3987850","artifacts":["../../../../../app","../../../../../tests"]}
 {"time":"2026-07-14T12:06:07+08:00","stage":"coder","actor":"codex","type":"stage_completed","message":"完成 Web 临时文件清理、路径脱敏和会话重跑修复","artifacts":["../../../../../web_app.py","../../../../../tests/test_web_app.py"]}
 {"time":"2026-07-14T12:06:07+08:00","stage":"verifier","actor":"codex","type":"validation_passed","message":"完整单元测试通过，共 60 项","artifacts":["validations.json"]}
+{"time":"2026-07-14T12:09:33+08:00","stage":"verifier","actor":"codex","type":"runtime_validation_passed","message":"Streamlit 在 8501 端口启动并通过 healthcheck","artifacts":["validations.json"]}
+{"time":"2026-07-14T12:51:31+08:00","stage":"verifier","actor":"codex","type":"interaction_validation_passed","message":"真实 Chrome 上传、生成、下载和 rerun 流程通过，console 和 network 错误为 0","artifacts":["snapshots/upload-generate-report.png","snapshots/rerun-retains-result.png","logs/interaction-summary.json"]}
+{"time":"2026-07-14T13:21:35+08:00","stage":"doc_gardener","actor":"codex","type":"stage_completed","message":"完成历史 Harness 纠错、长期文档同步和作品集 PDF 更新","artifacts":["doc-sync-report.md","../../../../../PROJECT_STATUS.md","../../../../../docs/portfolio/job_agent_case_study.pdf"]}
+{"time":"2026-07-14T13:21:35+08:00","stage":"human_review","actor":"codex","type":"status_changed","message":"任务进入 ready_for_human_review","artifacts":["state.json","summary.md","handoff.md","verification-report.md"]}
+{"time":"2026-07-14T13:21:36+08:00","stage":"verifier","actor":"codex","type":"validation_passed","message":"最终全量单元测试通过，共 61 项","artifacts":["validations.json","verification-report.md"]}

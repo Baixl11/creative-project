@@ -5,8 +5,8 @@ source:
   runtime_plan: "runtime-test-plan.md"
 tool:
   preferred: "mcp_playwright_or_browser_automation"
-  fallback: "http_smoke_plus_user_manual_acceptance"
-  availability: "unknown"
+  fallback: "user_manual_acceptance"
+  availability: "unavailable_at_task_time"
 entry:
   kind: "web"
   command: "streamlit run projects/job-agent/web_app.py"
@@ -33,6 +33,6 @@ scenarios:
       - "HTTP healthcheck returns success"
       - "No blocking startup error"
     evidence:
-      screenshot: "snapshots/monorepo-web-entry.png"
-      console: "logs/monorepo-web-entry-console.json"
-      network: "logs/monorepo-web-entry-network.json"
+      screenshot: null
+      console: null
+      network: null

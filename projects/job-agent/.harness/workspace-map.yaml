@@ -6,6 +6,10 @@ workspace:
     related_project_write_policy: "目录存在 .harness 时视为独立 harness 项目，默认只读且写入需用户确认；目录没有 .harness 时视为当前主 harness 的附属仓库，默认允许在同一任务内编辑"
     same_task_branch_for_affiliated_repos: true
     unresolved_cross_project_edges_require_clarification: true
+  git:
+    repository_root: "../.."
+    project_path: "projects/job-agent"
+    branch_policy: "harness/<type>/<short-slug>"
 
 related_projects:
     []
@@ -33,8 +37,8 @@ command_graph:
       evidence: "README.md and WEB_DEMO.md local Web UI launch command"
       touches:
         - "."
-        - "outputs/web/"
+        - "system temporary directory during a run"
+        - "Streamlit session memory"
 
 unresolved:
     - "No sibling or parent project is referenced by README, scripts, requirements, or docs; workspace is treated as single-project."
-    - "Target directory is not a git repository; git branch/commit rules are generated for future use but branch operations are skipped during bootstrap."

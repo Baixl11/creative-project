@@ -58,7 +58,8 @@ harness:
         evidence: "README.md and WEB_DEMO.md local Web UI launch command"
         touches:
           - "."
-          - "outputs/web/"
+          - "system temporary directory during a run"
+          - "Streamlit session memory"
     policy: "dev/build/test/lint/package/release 涉及其他项目时，必须读取 workspace-map 并分析相关项目；相关项目存在 .harness 时默认只读且写入需用户确认；无 .harness 的附属子仓库默认可在同一任务内编辑"
     branch_policy: "可编辑附属子仓库使用与主仓库相同的 harness/<type>/<short-slug> 分支"
   environment:

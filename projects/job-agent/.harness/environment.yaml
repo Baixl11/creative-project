@@ -73,12 +73,12 @@ commands:
     evidence: "README.md and WEB_DEMO.md"
   -
     name: "web_smoke"
-    command: "curl -I http://localhost:8501"
+    command: "curl --fail --silent --show-error http://localhost:8501/_stcore/health"
     category: "runtime"
     working_dir: "."
     long_running: false
-    purpose: "Check that Streamlit returns HTTP 200 after web_dev starts."
-    evidence: "prior local smoke verification"
+    purpose: "Check that the running Streamlit service reports healthy; this is runtime evidence, not interaction evidence."
+    evidence: "2026-07-14 audit-findings-remediation runtime verification"
 
 frontend:
   kind: "streamlit"
@@ -111,14 +111,16 @@ frontend:
 
 mcp_playwright:
   required_for_ui: true
-  availability: "unknown"
-  fallback_policy: "For formal UI behavior or visual tasks, create interaction-test-plan.yaml and pause for user confirmation if MCP Playwright/browser automation is unavailable; curl-only checks prove service reachability but not interaction behavior."
+  availability: "standalone_playwright_verified_in_current_venv"
+  preferred_plugin_status: "blocked: Browser and Chrome clients fail with Cannot redefine property: process"
+  fallback_policy: "Use real Playwright/browser interaction with snapshot, console, network and screenshot evidence; curl-only checks prove service reachability but not interaction behavior."
+  last_evidence: ".harness/tasks/2026-07-14/fix/audit-findings-remediation/logs/interaction-summary.json"
 
 unresolved:
-  - "MCP Playwright availability is not proven in this project bootstrap; current verification used Streamlit launch plus curl healthcheck."
+  - "Browser and Chrome plugin clients currently fail during runtime initialization; standalone Playwright is test-only and is not listed as a production dependency."
   - "Chinese OCR language data is installed locally; screenshot clarity and OCR spacing artifacts still require validation for real user images."
 
 rules:
   unknown_policy: "运行、调试、入口 URL、测试数据或 MCP Playwright 可用性无法确认时，任务必须进入 needs_clarification。"
   frontend_behavior_gate: "Streamlit 前端或用户可见行为变更必须有 runtime-test-plan.md 和 interaction-test-plan.yaml，不能只以 build/typecheck/lint/compile 作为完成依据。"
-  evidence_policy: "MCP Playwright 验证必须记录 snapshot、console、network、screenshot 和 validations.json.interaction_checks。"
+  evidence_policy: "Playwright/浏览器验证必须记录 snapshot、console、network、screenshot 和 validations.json.interaction_checks。"

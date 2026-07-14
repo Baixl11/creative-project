@@ -13,14 +13,14 @@
       "summary": "完成核心正确性、Web 临时文件和 Streamlit 会话重跑修复"
     },
     "verifier": {
-      "status": "running",
-      "last_update": "2026-07-14T12:06:07+08:00",
-      "summary": "60 个单元与 Streamlit 低层测试通过，开始执行完整传感器"
+      "status": "done",
+      "last_update": "2026-07-14T13:21:35+08:00",
+      "summary": "61 个测试、3 个评测、公开 CLI、运行时与真实 Chrome 交互验证通过"
     },
     "doc_gardener": {
-      "status": "pending",
-      "last_update": null,
-      "summary": ""
+      "status": "done",
+      "last_update": "2026-07-14T13:21:35+08:00",
+      "summary": "已同步 Harness 状态、项目状态、质量文档、演示文档和作品集 PDF"
     }
   }
 }

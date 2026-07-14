@@ -1,18 +1,24 @@
 {
   "schema_version": "1.0",
-  "artifacts": [
-    {"path": "problem-decomposition.md", "status": "present"},
-    {"path": "research-notes.md", "status": "present"},
-    {"path": "acceptance-criteria.md", "status": "present"},
-    {"path": "functional-test-plan.md", "status": "present"},
-    {"path": "runtime-test-plan.md", "status": "present"},
-    {"path": "interaction-test-plan.yaml", "status": "present"},
-    {"path": "../../../web_app.py", "status": "updated"},
-    {"path": "../../../tests/test_web_app.py", "status": "updated"},
-    {"path": "../../../DEPLOYMENT.md", "status": "created"},
-    {"path": "../../../packages.txt", "status": "created"},
-    {"path": "../../../.streamlit/config.toml", "status": "created"},
-    {"path": "../../../README.md", "status": "updated"},
-    {"path": "../../../WEB_DEMO.md", "status": "updated"}
+  "required": [
+    {"path": "problem-decomposition.md", "kind": "planning", "status": "present"},
+    {"path": "acceptance-criteria.md", "kind": "planning", "status": "present"},
+    {"path": "exec-plan.md", "kind": "planning", "status": "present"},
+    {"path": "verification-report.md", "kind": "verification", "status": "present"},
+    {"path": "handoff.md", "kind": "delivery", "status": "present"},
+    {"path": "summary.md", "kind": "delivery", "status": "present"}
+  ],
+  "optional": [
+    {"path": "research-notes.md", "kind": "planning", "status": "present"},
+    {"path": "functional-test-plan.md", "kind": "verification", "status": "present"},
+    {"path": "runtime-test-plan.md", "kind": "verification", "status": "present"},
+    {"path": "interaction-test-plan.yaml", "kind": "verification", "status": "present"},
+    {"path": "../../../../../web_app.py", "kind": "source", "status": "present"},
+    {"path": "../../../../../tests/test_web_app.py", "kind": "test", "status": "present"},
+    {"path": "../../../../../DEPLOYMENT.md", "kind": "documentation", "status": "present"},
+    {"path": "../../../../../packages.txt", "kind": "configuration", "status": "present"},
+    {"path": "../../../../../.streamlit/config.toml", "kind": "configuration", "status": "present"},
+    {"path": "../../../../../README.md", "kind": "documentation", "status": "present"},
+    {"path": "../../../../../WEB_DEMO.md", "kind": "documentation", "status": "present"}
   ]
 }

@@ -1,0 +1,46 @@
+{
+  "url": "http://localhost:8501",
+  "viewport": {
+    "width": 1440,
+    "height": 1000,
+    "device_scale_factor": 1
+  },
+  "steps": [
+    {
+      "step": "open",
+      "status": "passed"
+    },
+    {
+      "step": "upload",
+      "status": "passed"
+    },
+    {
+      "step": "generate",
+      "status": "passed"
+    },
+    {
+      "step": "download",
+      "status": "passed"
+    },
+    {
+      "step": "rerun_retains_result",
+      "status": "passed"
+    }
+  ],
+  "downloads": [
+    {
+      "kind": "markdown",
+      "filename": "report_20260714_125126_bbc89fbb.md",
+      "contains_report_heading": true
+    },
+    {
+      "kind": "json",
+      "filename": "report_20260714_125126_bbc89fbb.json",
+      "contains_absolute_path": false
+    }
+  ],
+  "console_errors": [],
+  "page_errors": [],
+  "network_failures": [],
+  "status": "passed"
+}

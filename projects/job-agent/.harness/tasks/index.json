@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "updated_at": "2026-07-14T12:06:07+08:00",
+  "updated_at": "2026-07-14T13:21:35+08:00",
   "tasks": [
     {
       "task_key": "2026-04-29/feature/chinese-ocr-support",
@@ -57,20 +57,20 @@
       "title": "配置公网网页即点即用入口",
       "type": "feature",
       "slug": "public-web-entry",
-      "status": "ready_for_human_review",
+      "status": "needs_clarification",
       "branch": "harness/feature/public-web-entry",
-      "summary": "网页入口部署适配、monorepo 验证和 GitHub push 已完成；等待用户在 Streamlit Cloud 创建网页应用。",
-      "updated_at": "2026-05-06"
+      "summary": "部署适配和 push 已完成，但原任务没有真实浏览器交互证据；等待用户决定是否继续 Streamlit Cloud 创建与部署后验收。",
+      "updated_at": "2026-07-14T12:52:00+08:00"
     },
     {
       "task_key": "2026-07-14/fix/audit-findings-remediation",
       "title": "修复项目审查发现的问题",
       "type": "fix",
       "slug": "audit-findings-remediation",
-      "status": "needs_verification",
+      "status": "ready_for_human_review",
       "branch": "harness/fix/audit-findings-remediation",
-      "summary": "核心与 Web 修复已完成，60 个测试通过，正在执行完整传感器。",
-      "updated_at": "2026-07-14T12:06:07+08:00"
+      "summary": "审查问题已修复，61 个测试及真实 Chrome 核心交互通过，等待用户验收。",
+      "updated_at": "2026-07-14T13:21:35+08:00"
     }
   ]
 }

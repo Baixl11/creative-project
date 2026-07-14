@@ -43,6 +43,15 @@ class LLMServiceTests(unittest.TestCase):
         ), self.assertRaisesRegex(LLMServiceError, "not valid JSON"):
             service.complete("system", "user")
 
+    def test_complete_wraps_invalid_utf8(self) -> None:
+        service = LLMService(self.settings)
+
+        with patch(
+            "app.services.llm_service.urllib.request.urlopen",
+            return_value=FakeResponse(b"\xff\xfe"),
+        ), self.assertRaisesRegex(LLMServiceError, "not valid UTF-8"):
+            service.complete("system", "user")
+
     def test_complete_rejects_invalid_response_shape(self) -> None:
         service = LLMService(self.settings)
 

@@ -227,7 +227,7 @@ def page_cover() -> Image.Image:
     draw_text(
         draw,
         (M, y),
-        "从 JD 和简历输入，到匹配分析、证据定位、简历改写和面试准备的本地 AI Agent 工作流。",
+        "从 JD 和简历输入，到匹配分析、证据定位、简历改写和面试准备，形成可在本地运行的完整工作流。",
         FONTS["body"],
         MUTED,
         980,
@@ -249,8 +249,8 @@ def page_cover() -> Image.Image:
         leading=16,
     )
     draw_metric_card(draw, (M, 1480, M + 292, 1715), "0-1", "完整构建", "从空项目到本地可运行 AI Agent", GREEN)
-    draw_metric_card(draw, (M + 326, 1480, M + 618, 1715), "95/100", "真实样例", "中文 JD 与 PDF 简历匹配结果", CARD)
-    draw_metric_card(draw, (M + 652, 1480, M + 944, 1715), "41", "自动化测试", "覆盖核心流程与 Web UI 辅助逻辑", CARD)
+    draw_metric_card(draw, (M + 326, 1480, M + 618, 1715), "94/100", "中文样例", "公开中文 JD 与简历匹配结果", CARD)
+    draw_metric_card(draw, (M + 652, 1480, M + 944, 1715), "61", "自动化测试", "覆盖核心流程与 Web UI 交互逻辑", CARD)
     draw_metric_card(draw, (M + 978, 1480, W - M, 1715), "3/3", "评测通过", "高 / 中 / 低匹配样例全部通过", CLAY)
     footer(draw, 1)
     return img
@@ -397,7 +397,7 @@ def page_capabilities() -> Image.Image:
         ("可解释匹配", "不只输出分数，还逐条说明 JD 要求对应到简历里的哪一句证据。"),
         ("简历 bullet 改写", "区分当前依据、建议写法和改写理由，把分析结果变成可行动建议。"),
         ("本地 Web UI", "支持样例、真实样例和上传文件分析，面试展示更直观。"),
-        ("评测回归", "高 / 中 / 低匹配样例和 41 个 unittest 支撑持续迭代。"),
+        ("评测回归", "高 / 中 / 低匹配样例和 61 个 unittest 支撑持续迭代。"),
     ]
     gap = 28
     card_w = (W - M * 2 - gap) // 2
@@ -442,7 +442,7 @@ def page_iteration() -> Image.Image:
     draw.text((M + 42, y2 + 40), "迭代结果", font=FONTS["h3"], fill=OLIVE)
     draw.text((M + 42, y2 + 118), "18/100", font=FONTS["metric"], fill=ACCENT)
     draw.text((M + 300, y2 + 136), "→", font=FONTS["metric"], fill=SUBTLE)
-    draw.text((M + 420, y2 + 118), "95/100", font=FONTS["metric"], fill=ACCENT_DARK)
+    draw.text((M + 420, y2 + 118), "94/100", font=FONTS["metric"], fill=ACCENT_DARK)
     draw_text(
         draw,
         (M + 42, y2 + 210),
@@ -463,9 +463,9 @@ def page_quality() -> Image.Image:
     draw.text((M, y), "评测集结果", font=FONTS["h3"], fill=INK)
     y += 70
     cases = [
-        ("high_match", "82", "80-100", "PASS", "#dfead1"),
-        ("medium_match", "55", "45-79", "PASS", "#fff4d0"),
-        ("low_match", "9", "0-44", "PASS", "#ead0bd"),
+        ("high_match", "88", "80-100", "PASS", "#dfead1"),
+        ("medium_match", "60", "45-79", "PASS", "#fff4d0"),
+        ("low_match", "16", "0-44", "PASS", "#ead0bd"),
     ]
     for i, (case, score, expected, status, fill) in enumerate(cases):
         yy = y + i * 190
@@ -476,7 +476,7 @@ def page_quality() -> Image.Image:
         draw.text((W - M - 180, yy + 52), status, font=FONTS["body_s"], fill=OLIVE)
     y += 620
     card(draw, (M, y, W - M, y + 520), fill=CARD)
-    draw.text((M + 42, y + 42), "41 个 unittest 覆盖", font=FONTS["h3"], fill=ACCENT_DARK)
+    draw.text((M + 42, y + 42), "61 个 unittest 覆盖", font=FONTS["h3"], fill=ACCENT_DARK)
     bullet_list(
         draw,
         M + 46,
@@ -634,7 +634,7 @@ def page_roadmap() -> Image.Image:
         right[0] + 44,
         y + 126,
         [
-            "短期：整理作品集截图和演示脚本，初始化 git 仓库。",
+            "短期：刷新作品集截图和演示脚本，完成用户行为验收。",
             "中期：接入真实 LLM，优化 bullet 润色和语义判断。",
             "长期：支持多岗位批量比较、投递优先级和面试提纲。",
         ],

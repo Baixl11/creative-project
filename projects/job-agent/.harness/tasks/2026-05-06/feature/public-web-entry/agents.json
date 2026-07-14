@@ -1,10 +1,26 @@
 {
   "schema_version": "1.0",
-  "agents": [
-    {
-      "name": "codex",
-      "role": "orchestrator",
-      "status": "active"
+  "mode": "serial",
+  "agents": {
+    "planner": {
+      "status": "done",
+      "last_update": "2026-05-06T00:00:00+08:00",
+      "summary": "完成 Streamlit Cloud 部署就绪方案"
+    },
+    "coder": {
+      "status": "done",
+      "last_update": "2026-05-06T00:00:00+08:00",
+      "summary": "完成 monorepo 路径适配、部署配置和文档"
+    },
+    "verifier": {
+      "status": "blocked",
+      "last_update": "2026-07-14T12:52:00+08:00",
+      "summary": "低层命令和服务启动已完成，但原任务缺少真实浏览器交互证据"
+    },
+    "doc_gardener": {
+      "status": "done",
+      "last_update": "2026-05-06T00:00:00+08:00",
+      "summary": "部署说明已写入长期文档"
     }
-  ]
+  }
 }

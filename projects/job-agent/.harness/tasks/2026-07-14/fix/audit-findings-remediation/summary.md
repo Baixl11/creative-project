@@ -1,8 +1,10 @@
 # 任务摘要
 
-- 状态：`needs_verification`
-- 当前阶段：verifier
-- 已完成：核心正确性、Web 临时文件、JSON 路径脱敏和 Streamlit 重跑修复；60 个测试通过。
-- 正在处理：项目必跑传感器、服务启动与交互验证。
-- 已知风险：Browser 插件初始化失败，真实页面交互证据暂不可用。
-- 下一步：执行评测、CLI、Harness 计划校验和 Streamlit 运行时验证。
+- 状态：`ready_for_human_review`
+- 当前阶段：human_review
+- 已修复：改写编造、PII fallback、JD 忽略区、匹配过宽、评测退出码、LLM 错误/降级状态、UTF-8 错误、Web 持久上传和 Streamlit rerun 丢结果。
+- 已验证：61 个测试、3 个评测、公开中文 CLI（94 分）、Web 编译、Harness 计划、OCR 语言、Streamlit 运行时和真实 Chrome 核心交互。
+- 交互证据：上传、生成、Markdown/JSON 下载和 rerun 保留通过；console/page/network 错误为 0。
+- 已同步：历史 Harness 纠错、项目状态、质量/可靠性文档、演示指南、作品集稿和 PDF。
+- 未执行：私有样例传感器（文件缺失）、真实 LLM/API、远端 push。
+- 下一步：等待用户验收。
