@@ -7,7 +7,7 @@ route_reason: "new_request: 修复项目审查中已复现的跨模块问题"
 branch: "harness/fix/audit-findings-remediation"
 created_at: "2026-07-14T11:33:20+08:00"
 title: "修复项目审查发现的问题"
-status: "coding"
+status: "needs_verification"
 goal: "让简历分析、匹配、评测、LLM 降级和 Web 文件处理符合输入证据、隐私与错误边界，并让项目状态记录与实际验证一致。"
 context: "审查已复现简历改写编造、PII 回流、JD 忽略区失效、匹配过宽、评测失败仍返回 0、LLM 降级状态错误、上传文件长期留存和 Harness 交互证据失真等问题。"
 constraints:

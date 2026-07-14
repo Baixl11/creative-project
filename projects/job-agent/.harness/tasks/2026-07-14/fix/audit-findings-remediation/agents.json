@@ -8,14 +8,14 @@
       "summary": "完成问题拆解、调研记录、验收标准和执行计划"
     },
     "coder": {
-      "status": "running",
-      "last_update": "2026-07-14T11:36:36+08:00",
-      "summary": "开始修复解析、改写、匹配、评测和 LLM 边界"
+      "status": "done",
+      "last_update": "2026-07-14T12:06:07+08:00",
+      "summary": "完成核心正确性、Web 临时文件和 Streamlit 会话重跑修复"
     },
     "verifier": {
-      "status": "pending",
-      "last_update": null,
-      "summary": ""
+      "status": "running",
+      "last_update": "2026-07-14T12:06:07+08:00",
+      "summary": "60 个单元与 Streamlit 低层测试通过，开始执行完整传感器"
     },
     "doc_gardener": {
       "status": "pending",

@@ -2,8 +2,8 @@
   "schema_version": "1.0",
   "task_key": "2026-07-14/fix/audit-findings-remediation",
   "title": "修复项目审查发现的问题",
-  "status": "coding",
+  "status": "needs_verification",
   "branch": "harness/fix/audit-findings-remediation",
-  "updated_at": "2026-07-14T11:36:36+08:00",
-  "summary": "独立任务分支已创建，正在修复核心业务正确性问题。"
+  "updated_at": "2026-07-14T12:06:07+08:00",
+  "summary": "核心与 Web 修复已完成，60 个测试通过，正在执行完整传感器。"
 }

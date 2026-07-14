@@ -3,3 +3,6 @@
 {"time":"2026-07-14T11:33:20+08:00","stage":"planner","actor":"codex","type":"artifact_written","message":"完成验收标准与分层验证计划","artifacts":["acceptance-criteria.md","functional-test-plan.md","runtime-test-plan.md","interaction-test-plan.yaml","exec-plan.md"]}
 {"time":"2026-07-14T11:36:36+08:00","stage":"planner","actor":"codex","type":"stage_completed","message":"规划阶段完成并创建独立任务分支","artifacts":["task-package.yaml","state.json"]}
 {"time":"2026-07-14T11:36:36+08:00","stage":"coder","actor":"codex","type":"started","message":"开始核心业务正确性修复","artifacts":[]}
+{"time":"2026-07-14T11:50:00+08:00","stage":"coder","actor":"codex","type":"commit_created","message":"核心正确性修复已提交为 3987850","artifacts":["../../../../../app","../../../../../tests"]}
+{"time":"2026-07-14T12:06:07+08:00","stage":"coder","actor":"codex","type":"stage_completed","message":"完成 Web 临时文件清理、路径脱敏和会话重跑修复","artifacts":["../../../../../web_app.py","../../../../../tests/test_web_app.py"]}
+{"time":"2026-07-14T12:06:07+08:00","stage":"verifier","actor":"codex","type":"validation_passed","message":"完整单元测试通过，共 60 项","artifacts":["validations.json"]}

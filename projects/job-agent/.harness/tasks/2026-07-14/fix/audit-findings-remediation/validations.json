@@ -1,15 +1,24 @@
 {
   "schema_version": "1.0",
-  "commands": [],
+  "commands": [
+    {
+      "name": "unit_tests",
+      "command": ".venv/bin/python -m unittest discover -s tests",
+      "status": "passed",
+      "started_at": "2026-07-14T12:00:56+08:00",
+      "finished_at": "2026-07-14T12:00:57+08:00",
+      "summary": "60 tests passed, including Streamlit rerun and temporary-file cleanup coverage"
+    }
+  ],
   "functional_checks": [
     {
       "name": "已复现业务问题回归",
       "kind": "unit_test",
       "command": ".venv/bin/python -m unittest discover -s tests",
-      "status": "pending",
+      "status": "passed",
       "risk": "blocking",
       "covers": ["改写可信度", "PII 过滤", "JD 忽略区", "匹配计数", "评测退出码", "LLM 降级", "非法编码", "Web 临时文件"],
-      "summary": "待实现后执行",
+      "summary": "60 tests passed; every reproduced issue has focused regression coverage",
       "failure_reason": null
     }
   ],
