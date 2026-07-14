@@ -1,0 +1,51 @@
+schema_version: "1.0"
+source:
+  environment: ".harness/environment.yaml"
+  acceptance: "acceptance-criteria.md"
+  runtime_plan: "runtime-test-plan.md"
+tool:
+  preferred: "browser_plugin"
+  fallback: "user_confirmed_manual_browser_or_project_playwright"
+  availability: "failed"
+  failure: "Browser client initialization failed twice with Cannot redefine property: process"
+entry:
+  kind: "web"
+  command: ".venv/bin/streamlit run web_app.py --server.headless true"
+  url: "http://localhost:8501"
+  working_dir: "/Users/cyan/个人工作/creative-project/projects/job-agent"
+viewport:
+  width: 1440
+  height: 1000
+  device_scale_factor: 1
+  zoom_factor: 1
+scenarios:
+  - name: "upload and generate report"
+    steps:
+      - action: "navigate"
+        target: "http://localhost:8501"
+        expected: "页面显示职位描述、简历上传和生成报告控件"
+      - action: "upload"
+        target: "JD 和简历上传控件"
+        expected: "两个文件均显示已选择"
+      - action: "click"
+        target: "生成报告"
+        expected: "显示匹配分、摘要、改写建议和下载按钮"
+      - action: "download"
+        target: "Markdown 和 JSON 下载"
+        expected: "下载内容完整且 JSON 不含服务器绝对路径"
+      - action: "inspect"
+        target: "console and network"
+        expected: "无阻塞级错误和失败请求"
+    evidence:
+      screenshot: "snapshots/upload-generate-report.png"
+      snapshot: "snapshots/upload-generate-report.snapshot.md"
+      console: "logs/upload-generate-report-console.json"
+      network: "logs/upload-generate-report-network.json"
+  - name: "rerun retains last result"
+    steps:
+      - action: "rerun"
+        target: "切换页面控件触发 Streamlit rerun"
+        expected: "最近一次结果和下载按钮仍可用"
+    evidence:
+      screenshot: "snapshots/rerun-retains-result.png"
+      snapshot: "snapshots/rerun-retains-result.snapshot.md"

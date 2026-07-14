@@ -98,6 +98,36 @@ class MatchEngineTests(unittest.TestCase):
 
         self.assertEqual(result.requirement_evidence[0].best_resume_highlight, direct_highlight)
 
+    def test_synonym_group_contributes_at_most_one_support_unit(self) -> None:
+        engine = MatchEngine()
+        requirement_tokens = engine._tokenize("AI LLM 与大模型")
+        resume_tokens = engine._tokenize("参与 AI 项目测试")
+
+        support_units = engine._count_support_units(requirement_tokens, resume_tokens)
+        result = engine.evaluate(["AI LLM 与大模型"], ["参与 AI 项目测试"])
+
+        self.assertEqual(support_units, 1)
+        self.assertLessEqual(result.requirement_evidence[0].match_strength, 1.0)
+
+    def test_match_engine_does_not_treat_optimization_as_team_collaboration(self) -> None:
+        engine = MatchEngine()
+        requirement = "与技术团队合作"
+
+        result = engine.evaluate([requirement], ["负责优化落地"])
+
+        self.assertEqual(result.matched_requirements, [])
+        self.assertEqual(result.missing_requirements, [requirement])
+        self.assertLess(result.requirement_evidence[0].match_strength, 0.22)
+        self.assertLess(result.score, 20)
+
+    def test_match_engine_returns_zero_when_no_requirements_exist(self) -> None:
+        engine = MatchEngine()
+
+        result = engine.evaluate([], ["Led an AI product launch."])
+
+        self.assertEqual(result.score, 0)
+        self.assertEqual(result.matched_requirements, [])
+
 
 if __name__ == "__main__":
     unittest.main()

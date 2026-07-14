@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "updated_at": "2026-05-06",
+  "updated_at": "2026-07-14T11:36:36+08:00",
   "tasks": [
     {
       "task_key": "2026-04-29/feature/chinese-ocr-support",
@@ -61,6 +61,16 @@
       "branch": "harness/feature/public-web-entry",
       "summary": "网页入口部署适配、monorepo 验证和 GitHub push 已完成；等待用户在 Streamlit Cloud 创建网页应用。",
       "updated_at": "2026-05-06"
+    },
+    {
+      "task_key": "2026-07-14/fix/audit-findings-remediation",
+      "title": "修复项目审查发现的问题",
+      "type": "fix",
+      "slug": "audit-findings-remediation",
+      "status": "coding",
+      "branch": "harness/fix/audit-findings-remediation",
+      "summary": "独立任务分支已创建，正在修复核心业务正确性问题。",
+      "updated_at": "2026-07-14T11:36:36+08:00"
     }
   ]
 }

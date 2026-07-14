@@ -28,6 +28,14 @@ class InputReaderTests(unittest.TestCase):
             with self.assertRaisesRegex(InputValidationError, "file type is not supported"):
                 read_required_input_text(path, "Resume")
 
+    def test_rejects_non_utf8_text_with_user_facing_error(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "resume.txt"
+            path.write_bytes(b"\xff\xfe\x00")
+
+            with self.assertRaisesRegex(InputValidationError, "not valid UTF-8"):
+                read_required_input_text(path, "Resume")
+
     def test_reads_macos_text_package_with_rtf_payload(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             package_path = Path(temp_dir) / "my_jd.txt"

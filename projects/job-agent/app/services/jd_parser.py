@@ -4,6 +4,7 @@ from app.utils.text_cleaner import dedupe_preserve_order, split_meaningful_lines
 
 
 class JDParser:
+    IGNORED_SECTION = "__ignored__"
     SECTION_HEADERS = {
         "responsibilities",
         "requirements",
@@ -59,6 +60,7 @@ class JDParser:
 
         job_title = lines[0]
         requirements: list[str] = []
+        fallback_candidates: list[str] = []
         current_section = ""
 
         for line in lines[1:]:
@@ -69,33 +71,31 @@ class JDParser:
                 continue
 
             if self._is_ignored_line(line, lowered):
-                current_section = ""
+                current_section = self.IGNORED_SECTION
                 continue
+
+            if current_section != self.IGNORED_SECTION:
+                fallback_candidates.append(line)
 
             if self._should_keep_line(line, lowered, current_section):
                 requirements.append(line)
 
         if not requirements:
-            requirements = lines[1:7]
+            requirements = fallback_candidates[:6]
 
         return job_title, dedupe_preserve_order(requirements)[:6]
 
     def _should_keep_line(self, line: str, lowered: str, current_section: str) -> bool:
+        if current_section == self.IGNORED_SECTION:
+            return False
+
         if len(line.split()) < 4 and len(line) < 12:
             return False
 
         if lowered.startswith("we are hiring"):
             return False
 
-        if current_section in {
-            "responsibilities",
-            "requirements",
-            "qualifications",
-            "岗位职责",
-            "任职要求",
-            "职位要求",
-            "岗位要求",
-        }:
+        if current_section in self.SECTION_HEADERS:
             return True
 
         return any(keyword in lowered for keyword in self.KEYWORDS)
@@ -114,7 +114,9 @@ class JDParser:
         return None
 
     def _is_ignored_line(self, line: str, lowered: str) -> bool:
-        if line in self.IGNORED_SECTION_HEADERS:
+        normalized_line = line.strip(" :：")
+        normalized_lowered = normalized_line.lower()
+        if normalized_line in self.IGNORED_SECTION_HEADERS:
             return True
 
-        return lowered.startswith("tag") or line.startswith("标签：")
+        return normalized_lowered.startswith("tag") or normalized_line.startswith("标签")

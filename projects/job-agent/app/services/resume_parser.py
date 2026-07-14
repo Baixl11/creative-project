@@ -77,13 +77,14 @@ class ResumeParser:
 
     def parse(self, text: str) -> list[str]:
         lines = split_resume_lines(text)
+        safe_lines = [line for line in lines if not self._is_noise_line(line)]
         highlights: list[str] = []
 
-        for line in lines:
-            if self._is_noise_line(line):
+        for line in safe_lines:
+            lowered = line.lower()
+            if self._looks_like_english_header(line):
                 continue
 
-            lowered = line.lower()
             if len(line.split()) < 5 and len(line) < 18:
                 continue
 
@@ -93,9 +94,31 @@ class ResumeParser:
                 highlights.append(line)
 
         if not highlights:
-            highlights = lines[:6]
+            highlights = safe_lines[:6]
 
         return dedupe_preserve_order(highlights)[:6]
+
+    def _looks_like_english_header(self, line: str) -> bool:
+        words = line.split()
+        action_starters = (
+            "Led ",
+            "Built ",
+            "Launched ",
+            "Improved ",
+            "Grew ",
+            "Managed ",
+            "Designed ",
+            "Created ",
+            "Coordinated ",
+            "Partnered ",
+            "Worked ",
+            "Wrote ",
+            "Explored ",
+            "Supported ",
+            "Planned ",
+            "Helped ",
+        )
+        return line.isascii() and len(words) <= 4 and not line.startswith(action_starters)
 
     def _is_noise_line(self, line: str) -> bool:
         lowered = line.lower()

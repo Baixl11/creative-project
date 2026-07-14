@@ -1,0 +1,48 @@
+{
+  "schema_version": "1.0",
+  "commands": [],
+  "functional_checks": [
+    {
+      "name": "已复现业务问题回归",
+      "kind": "unit_test",
+      "command": ".venv/bin/python -m unittest discover -s tests",
+      "status": "pending",
+      "risk": "blocking",
+      "covers": ["改写可信度", "PII 过滤", "JD 忽略区", "匹配计数", "评测退出码", "LLM 降级", "非法编码", "Web 临时文件"],
+      "summary": "待实现后执行",
+      "failure_reason": null
+    }
+  ],
+  "manual_checks": [],
+  "runtime_checks": [
+    {
+      "name": "Streamlit 服务启动",
+      "tool": "streamlit",
+      "entry": "http://localhost:8501",
+      "status": "pending",
+      "steps": ["启动无头服务", "等待 health endpoint", "检查启动日志"],
+      "expected": ["服务可达", "无阻塞级启动错误"],
+      "observed": [],
+      "failure_reason": null,
+      "summary": "待业务验证通过后执行"
+    }
+  ],
+  "interaction_checks": [
+    {
+      "name": "上传、生成、下载与 rerun",
+      "tool": "browser_plugin",
+      "entry": "http://localhost:8501",
+      "status": "pending",
+      "steps": ["上传 JD 与简历", "点击生成报告", "下载 Markdown 和 JSON", "触发 rerun 并检查结果保留"],
+      "expected": ["结果完整", "下载可用", "JSON 无绝对路径", "无阻塞级 console/network 错误"],
+      "observed": [],
+      "screenshot": null,
+      "snapshot": null,
+      "console_errors": null,
+      "network_failures": null,
+      "failure_reason": "Browser client initialization failed twice with Cannot redefine property: process",
+      "summary": "工具当前不可用，完成低层验证后仍需真实交互证据"
+    }
+  ],
+  "visual_checks": []
+}

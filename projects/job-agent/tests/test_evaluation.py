@@ -1,7 +1,9 @@
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
+from app import evaluate as evaluate_cli
 from app.config import Settings
 from app.evaluation import load_evaluation_cases, run_evaluation_suite
 
@@ -45,6 +47,21 @@ class EvaluationTests(unittest.TestCase):
             summary_markdown = (output_dir / "summary.md").read_text(encoding="utf-8")
             self.assertIn("## Case Diagnostics", summary_markdown)
             self.assertIn("Top missing requirements:", summary_markdown)
+
+    def test_cli_exits_nonzero_when_any_case_fails(self) -> None:
+        failed_summary = {
+            "case_count": 1,
+            "passed_count": 0,
+            "failed_count": 1,
+        }
+
+        with patch("sys.argv", ["app.evaluate"]), patch(
+            "app.evaluate.run_evaluation_suite",
+            return_value=failed_summary,
+        ), self.assertRaises(SystemExit) as context:
+            evaluate_cli.main()
+
+        self.assertEqual(context.exception.code, 1)
 
 
 if __name__ == "__main__":
