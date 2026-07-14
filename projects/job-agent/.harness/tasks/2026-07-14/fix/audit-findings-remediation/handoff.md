@@ -23,3 +23,9 @@
 - Browser 插件兼容问题未修复；本轮真实交互使用一次性 Playwright + 本机 Chrome。
 - 私有 `data/my_*` 不在仓库，相关传感器 skipped。
 - 未 push 远端，符合本任务策略。
+
+## 本轮提交
+
+- `3987850 fix(job-agent): correct analysis and fallback behavior`
+- `af867e9 fix(job-agent): keep web uploads ephemeral`
+- `afdc819 docs(job-agent): sync verification and project status`

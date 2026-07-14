@@ -11,3 +11,4 @@
 {"time":"2026-07-14T13:21:35+08:00","stage":"doc_gardener","actor":"codex","type":"stage_completed","message":"完成历史 Harness 纠错、长期文档同步和作品集 PDF 更新","artifacts":["doc-sync-report.md","../../../../../PROJECT_STATUS.md","../../../../../docs/portfolio/job_agent_case_study.pdf"]}
 {"time":"2026-07-14T13:21:35+08:00","stage":"human_review","actor":"codex","type":"status_changed","message":"任务进入 ready_for_human_review","artifacts":["state.json","summary.md","handoff.md","verification-report.md"]}
 {"time":"2026-07-14T13:21:36+08:00","stage":"verifier","actor":"codex","type":"validation_passed","message":"最终全量单元测试通过，共 61 项","artifacts":["validations.json","verification-report.md"]}
+{"time":"2026-07-14T13:32:32+08:00","stage":"doc_gardener","actor":"codex","type":"commit_created","message":"修复、Web 上传生命周期、验证与文档已分三笔提交完成","artifacts":["3987850","af867e9","afdc819","handoff.md"]}
