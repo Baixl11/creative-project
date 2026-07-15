@@ -4,6 +4,13 @@ This file records the current state of autonomous Codex work so another thread c
 
 ## Latest Summary
 
+- Date: 2026-07-14
+- Goal focus for latest batch: Fix the error points and optimization points found in the July project review.
+- Current state: Install, verification, preview capture, and packaging diagnostics are now more robust. `.npmrc` no longer uses the deprecated `electron_mirror` custom key; `npm run install:deps` wraps `npm ci` with Electron mirror/cache environment variables. `npm run verify` is platform-aware: it runs core checks everywhere, skips Windows package verification outside Windows, and preview capture now falls back to a no-dependency Node PNG renderer if Chromium headless fails. Settings close-time save failures now keep the settings window open instead of treating the flush as successful, and pet dragging now clears state on pointer cancellation/lost capture. BrowserWindow sandboxing is enabled for the pet, settings, and capture windows.
+- Next recommended task: Run `npm.cmd run install:deps`, `npm.cmd run verify`, and `npm.cmd run package:win` on a Windows machine, then manually verify the transparent desktop pet window, tray actions, settings auto-apply/revert/reset, right-click menu, mouse pass-through, and drag behavior.
+
+## Earlier Summary
+
 - Date: 2026-06-17
 - Goal focus for latest batch: Additively upload the project into the existing GitHub repository `Baixl11/creative-project` under `projects/desktop-pet-line-dog`.
 - Current state: Upload preparation is blocked on SSH authentication. The local project is not itself a Git repository, so the safe path remains to clone the destination repository into a temporary working directory, verify the target subfolder is absent, copy the project while honoring `.gitignore` exclusions, then commit and push only the new subtree.
@@ -199,6 +206,17 @@ This file records the current state of autonomous Codex work so another thread c
 
 ## Latest Quality Review
 
+- Changed files: `.npmrc`, `package.json`, `README.md`, `electron/main.cjs`, `electron/preload.cjs`, `src/ui/SettingsPanel.tsx`, `src/visuals/PetScene.tsx`, `scripts/install-deps.cjs`, `scripts/capture-preview-page.cjs`, `scripts/render-pet-preview-fallback.cjs`, `scripts/package-win.cjs`, `scripts/verify-package.cjs`, `docs/codex/AGENT_BACKLOG.md`, `docs/codex/AGENT_HANDOFF.md`, and regenerated `docs/codex/pet-redesign-preview.png`.
+- Intended behavior change: make dependency installation and verification more reliable across current macOS development and Windows packaging contexts, improve package/previews diagnostics, preserve failed settings edits by keeping the settings window open, avoid stuck drag state after pointer cancellation, and tighten Electron renderer sandboxing.
+- Affected workflows: dependency installation, `npm run verify`, preview screenshot generation, Windows package command diagnostics, settings close behavior after pending auto-apply edits, desktop pet dragging, and Electron preload/main IPC boundaries.
+- Adjacent impact: `npm run verify` no longer attempts Windows packaging on macOS/Linux; direct `npm run package:win` still enforces the Windows-only package path. Preview capture may produce a simpler Node-rendered fallback image when Chromium cannot run, but still writes an inspectable PNG for review. Enabling `sandbox: true` is expected to work because preload only uses Electron IPC/contextBridge APIs, but should still be smoke-tested in the real Electron runtime.
+- Code review summary: checked npm script flow, Electron mirror/cache env propagation, browser path resolution, fallback preview control flow, PNG validity, platform-specific package checks, close-time flush request matching, failed-flush window behavior, preload payload compatibility, pointer cancellation cleanup, and that unrelated `redbook-monitoring` work was not touched.
+- Functional verification: `npm run typecheck` passes. `node --check` passes for `scripts/install-deps.cjs`, `scripts/capture-preview-page.cjs`, `scripts/render-pet-preview-fallback.cjs`, `scripts/package-win.cjs`, and `scripts/verify-package.cjs`. `npm run build` passes with the pre-existing large chunk warning. `npm audit --audit-level=high` reports 0 vulnerabilities. `node scripts/capture-preview-page.cjs` passes by falling back after Chrome headless exits with `SIGABRT`. `node scripts/verify-package.cjs` passes on macOS by skipping Windows packaging. `npm run verify` passes end to end on macOS.
+- Interface verification: inspected the regenerated `docs/codex/pet-redesign-preview.png`; it is a valid nonblank fallback preview with four line-style pet cards. Full live Electron UI verification was not run because the Electron runtime binary is not installed in this macOS workspace after using `npm ci --ignore-scripts`.
+- Remaining manual checks: run full install and Windows packaging on Windows; manually verify transparent desktop window behavior, tray menu, pet right-click menu, settings auto-apply/revert/reset, failed-save UX in the real settings window, mouse pass-through, and drag cancellation behavior. The large bundled renderer chunk remains an optimization opportunity.
+
+## Previous Quality Review
+
 - Changed files: `scripts/generate-xhs-social-assets.ps1`, `docs/social/xhs-desktop-pet/01-cover.png`, `docs/social/xhs-desktop-pet/02-features.png`, `docs/social/xhs-desktop-pet/03-pet-lineup.png`, `docs/social/xhs-desktop-pet/04-build-process.png`, `docs/social/xhs-desktop-pet/post-copy.md`, `docs/codex/AGENT_BACKLOG.md`, and `docs/codex/AGENT_HANDOFF.md`.
 - Intended behavior change: add a publish-ready social media packaging bundle for the desktop pet project, using project-local line-art assets and concise Chinese post copy for Xiaohongshu.
 - Affected workflows: social sharing, project presentation, and future content iteration. Runtime desktop pet behavior, packaging, Electron IPC, settings persistence, and source UI behavior are not intentionally changed.
@@ -288,9 +306,9 @@ If something was not run, explain why:
   - Evidence: `git clone git@github.com:Baixl11/creative-project.git C:\tmp\creative-project-upload` reached GitHub but failed with `Permission denied (publickey)`.
   - Needed: Add/configure an SSH key for this environment that has access to the repository, or approve an alternate authentication method.
 
-- macOS verification.
-  - Impact: Cross-platform behavior cannot be fully verified from the current Windows environment.
-  - Needed: Run the app on macOS or provide a macOS verification environment.
+- Windows package and runtime verification.
+  - Impact: The current macOS environment can run renderer checks, preview fallback, and platform-aware verification, but cannot rebuild or smoke-test the Windows unpacked `.exe`.
+  - Needed: Run `npm.cmd run install:deps`, `npm.cmd run verify`, and `npm.cmd run package:win` on a Windows machine, then manually smoke-test `release/win-unpacked/DesktopPetLineDog.exe`.
 
 ## Files To Revisit
 

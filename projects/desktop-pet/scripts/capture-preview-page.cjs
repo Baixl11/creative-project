@@ -8,14 +8,43 @@ const projectRoot = path.resolve(__dirname, "..");
 const outPath = path.join(projectRoot, "docs", "codex", "pet-redesign-preview.png");
 const previewUrl = "http://127.0.0.1:4173/?view=pet-preview&render=2d";
 
-function resolveEdgePath() {
-  const candidates = [
-    process.env.MSEDGE_PATH,
-    "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
-    "C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe"
-  ].filter(Boolean);
+function commandExists(command) {
+  const result = spawnSync(command, ["--version"], {
+    encoding: "utf8",
+    stdio: "ignore"
+  });
+  return result.status === 0;
+}
 
-  return candidates.find((candidate) => fs.existsSync(candidate));
+function resolveBrowserPath() {
+  const envCandidates = [process.env.BROWSER_PATH, process.env.MSEDGE_PATH, process.env.CHROME_PATH].filter(Boolean);
+  const platformCandidates =
+    process.platform === "win32"
+      ? [
+          "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+          "C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe",
+          "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+          "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe"
+        ]
+      : process.platform === "darwin"
+        ? [
+            "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
+            "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+            "/Applications/Chromium.app/Contents/MacOS/Chromium",
+            "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser"
+          ]
+        : [];
+  const pathCandidates = [...envCandidates, ...platformCandidates];
+  const existingPath = pathCandidates.find((candidate) => fs.existsSync(candidate));
+  if (existingPath) {
+    return existingPath;
+  }
+
+  const commandCandidates =
+    process.platform === "win32"
+      ? []
+      : ["microsoft-edge", "google-chrome", "chromium", "chromium-browser", "brave-browser"];
+  return commandCandidates.find(commandExists);
 }
 
 function waitForPort(port, timeoutMs = 15000) {
@@ -59,6 +88,12 @@ function stopProcessTree(childProcess) {
 
 function renderFallbackPreview(reason) {
   console.warn(`Browser preview capture failed; using local fallback renderer. Reason: ${reason}`);
+
+  if (process.platform !== "win32") {
+    renderNodeFallbackPreview();
+    return;
+  }
+
   const result = spawnSync(
     "powershell.exe",
     [
@@ -78,6 +113,12 @@ function renderFallbackPreview(reason) {
     }
   );
 
+  if (result.error) {
+    console.warn(`PowerShell fallback could not start; using Node fallback renderer. Reason: ${result.error.message}`);
+    renderNodeFallbackPreview();
+    return;
+  }
+
   if (result.status !== 0) {
     if (result.stdout) {
       process.stdout.write(result.stdout);
@@ -85,7 +126,30 @@ function renderFallbackPreview(reason) {
     if (result.stderr) {
       process.stderr.write(result.stderr);
     }
-    throw new Error(`Fallback preview rendering failed with status ${result.status ?? "unknown"}.`);
+    console.warn(`PowerShell fallback failed with status ${result.status ?? "unknown"}; using Node fallback renderer.`);
+    renderNodeFallbackPreview();
+  }
+}
+
+function renderNodeFallbackPreview() {
+  const result = spawnSync(process.execPath, [path.join(projectRoot, "scripts", "render-pet-preview-fallback.cjs"), outPath], {
+    cwd: projectRoot,
+    encoding: "utf8",
+    stdio: "pipe",
+    timeout: 45000
+  });
+
+  if (result.stdout) {
+    process.stdout.write(result.stdout);
+  }
+  if (result.stderr) {
+    process.stderr.write(result.stderr);
+  }
+  if (result.error) {
+    throw new Error(`Node fallback preview rendering could not start: ${result.error.message}`);
+  }
+  if (result.status !== 0) {
+    throw new Error(`Node fallback preview rendering failed with status ${result.status ?? "unknown"}.`);
   }
 }
 
@@ -115,10 +179,20 @@ function writeVerboseCaptureOutput(stdout, stderr, result) {
   }
 }
 
+function getBrowserFailureMessage(browserPath, result) {
+  if (result.error) {
+    return `${browserPath} could not start: ${result.error.message}`;
+  }
+  if (result.signal) {
+    return `${browserPath} exited because it received ${result.signal}.`;
+  }
+  return `${browserPath} exited with status ${result.status ?? "unknown"}.`;
+}
+
 async function main() {
-  const edgePath = resolveEdgePath();
-  if (!edgePath) {
-    renderFallbackPreview("Microsoft Edge was not found. Set MSEDGE_PATH to use a Chromium-compatible browser.");
+  const browserPath = resolveBrowserPath();
+  if (!browserPath) {
+    renderFallbackPreview("No Chromium-compatible browser was found. Set BROWSER_PATH to a browser executable.");
     assertValidPreviewImage();
     console.log(`Saved pet preview to ${outPath}`);
     return;
@@ -152,11 +226,14 @@ async function main() {
       fs.mkdirSync(path.dirname(outPath), { recursive: true });
 
       const result = spawnSync(
-        edgePath,
+        browserPath,
         [
           "--headless=new",
           "--disable-gpu",
+          "--disable-dev-shm-usage",
           "--hide-scrollbars",
+          "--no-first-run",
+          "--no-default-browser-check",
           "--allow-file-access-from-files",
           `--user-data-dir=${userDataDir}`,
           "--window-size=1200,1100",
@@ -173,7 +250,7 @@ async function main() {
 
       if (result.status !== 0) {
         writeVerboseCaptureOutput(stdout, stderr, result);
-        renderFallbackPreview(`Edge exited with status ${result.status ?? "unknown"}.`);
+        throw new Error(getBrowserFailureMessage(browserPath, result));
       }
     } catch (error) {
       writeVerboseCaptureOutput(stdout, stderr);

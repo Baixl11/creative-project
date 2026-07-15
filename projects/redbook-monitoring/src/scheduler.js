@@ -1,4 +1,5 @@
 import { listAuthSessions } from "./authSessions.js";
+import { publicCollectionErrorMessage } from "./errorSanitizer.js";
 import { defaultSchedulerSettings, normalizeSchedulerSettings } from "./repositories/schedulerSettings.js";
 
 const maxTimerDelay = 2147483647;
@@ -203,7 +204,7 @@ export function createCollectionScheduler({
           audit,
         });
       } catch (error) {
-        failed.push(`${account.name}：${error.message || "采集失败"}`);
+        failed.push(`${account.name}：${publicCollectionErrorMessage(error)}`);
       }
     }
 
@@ -262,7 +263,7 @@ export function createCollectionScheduler({
     } catch (error) {
       job.level = "error";
       job.status = "error";
-      job.message = `${jobLabel(reason)}采集异常：${error.message || "采集失败"}`;
+      job.message = `${jobLabel(reason)}采集异常：${publicCollectionErrorMessage(error)}`;
 
       try {
         job.log = dashboardRepository.createCollectionLog({

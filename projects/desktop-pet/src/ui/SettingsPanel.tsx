@@ -86,14 +86,19 @@ export function SettingsPanel({ selectedPetId, appearance, onSave, onReset }: Se
     const hadQueuedSave = hasQueuedSaveRef.current;
     const nextDraft = draftRef.current;
     clearQueuedSave();
-    if (hadQueuedSave) {
-      await runSave(nextDraft.selectedPetId, nextDraft.appearance);
-      setPanelStatus(statusText.applied);
-      return;
-    }
+    try {
+      if (hadQueuedSave) {
+        await runSave(nextDraft.selectedPetId, nextDraft.appearance);
+        setPanelStatus(statusText.applied);
+        return;
+      }
 
-    if (pendingSaveRef.current) {
-      await pendingSaveRef.current;
+      if (pendingSaveRef.current) {
+        await pendingSaveRef.current;
+      }
+    } catch (error) {
+      setPanelStatus(statusText.failed);
+      throw error;
     }
   }
 

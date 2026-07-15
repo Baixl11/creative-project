@@ -1,0 +1,111 @@
+{
+  "schema_version": 1,
+  "suite": "development-guidelines",
+  "suite_version": "2.0.0",
+  "installed_at": "2026-07-13T07:40:23.747053+00:00",
+  "skills": {
+    "ai-dev-tech-stack-orchestrator": {
+      "entries": {
+        "SKILL.md": "a0bfe8654bffe124f4225cc56be26af28a717cb11577e6bcf9fa74d0b7d9b4be",
+        "agents/": "directory",
+        "agents/openai.yaml": "bda73092313d9b48140ffef9ff0ab6298dc0dde19828e5e3cf7a454b3bf5f4c9",
+        "assets/": "directory",
+        "assets/stack-decision-template.md": "e3dcc11674a9fbd2c2b01564a96dfc80bb72b4d604b7744383a7e058f51669e8",
+        "references/": "directory",
+        "references/stack-decision.md": "cf0b88712370b714afebdd9053bdd331ec1a130c342793ca318f0c82e3f843e5"
+      }
+    },
+    "react-typescript-web-standard": {
+      "entries": {
+        "SKILL.md": "4f440637d76f6674cfaddd26fd3517ce90beb87a58b6600ddc46e63cddd8acdb",
+        "agents/": "directory",
+        "agents/openai.yaml": "cde0185b4dc261f4732da0f1f72ffb2655d288861198237b5c8253420287963f",
+        "references/": "directory",
+        "references/architecture-data.md": "bb27884e168e3315a80e0e81dc5f30b4cc832bce436db762f920d12833bd21ca",
+        "references/quality-release.md": "46fc27cddbacce56ee484e41d1740740e89b6f515a519d2c674911c379bc405a"
+      }
+    },
+    "vue-typescript-web-standard": {
+      "entries": {
+        "SKILL.md": "4ac0d72e7fc35a1b8c9c92300cc87fce555dd13ba5a6eb230fad88532ac455c1",
+        "agents/": "directory",
+        "agents/openai.yaml": "e54b37939cbbdcb0cdef89a6a5af7cb97933230748218167e41217cc1fa29f59",
+        "references/": "directory",
+        "references/architecture-data.md": "d81f9c14be45eb0a12a8f55fd284a60db42cfb02ca8893e64ed1b47ff988afaa",
+        "references/quality-release.md": "847a768e771462d596c27f24978a7d04b53432be68df7219f85a4440ecd56ea9"
+      }
+    },
+    "nextjs-fullstack-standard": {
+      "entries": {
+        "SKILL.md": "4c4abcba922fb2eb70f9bc083770f9f7439eddaf9d542c3f778d1d85401a8384",
+        "agents/": "directory",
+        "agents/openai.yaml": "a26b783b0a3f31b43d4d569d2280be30731f8c4a79f3c7669a56e59166b9bd3d",
+        "references/": "directory",
+        "references/architecture-security.md": "45835fcf34449995e832140bc1f423f0aefd7972e16a4c07675b9a0cb1b859a0",
+        "references/cache-quality-release.md": "2f0f19379b3aafe534a888ded813ffa90945a9958e8e74ee8dcb05a6a0b5350c"
+      }
+    },
+    "electron-desktop-standard": {
+      "entries": {
+        "SKILL.md": "ec4daec0695b014581b0caed4c1d687f3974ff9ee67c1bd62e29e20063dbf3c4",
+        "agents/": "directory",
+        "agents/openai.yaml": "306f29ff89849ddfb190f640573ba880f6d32cc483b84e25b6431ab8d6b53195",
+        "references/": "directory",
+        "references/architecture-security.md": "89cddbd57a4415c17df97c0959317d2a71ee5a15f02709e7f7e9d0888f04571b",
+        "references/quality-release.md": "375435b78261736c48e4be3f0ea7394a0e41da3a9b4a5d13dfd7e791047dde89"
+      }
+    },
+    "flutter-mobile-standard": {
+      "entries": {
+        "SKILL.md": "65852e5b7c8289b2c1775e04f2d614757abe3c3d11b100287658939041a3648c",
+        "agents/": "directory",
+        "agents/openai.yaml": "11ca21dcef74f0a9ab33868b68f94250950dc59e80fbe4840feed3ccdc774ea2",
+        "references/": "directory",
+        "references/architecture-data.md": "aa306fa50994296543f21b5f66350c0869d33c1b2b9a7c9ab5faaf629895a33a",
+        "references/quality-release.md": "07d53457a5642ccf90107f7ecf39309167f482e44d7642f8d15077d5b9425944"
+      }
+    },
+    "fastapi-backend-standard": {
+      "entries": {
+        "SKILL.md": "b9eab94e31e684d9416ccf689b070390814730121077784c2adfc704b72f12f5",
+        "agents/": "directory",
+        "agents/openai.yaml": "d63a894c01642cd39c26930faeae94f2b061b1fabbdcc3c59f744b63e7a676e3",
+        "references/": "directory",
+        "references/runtime-and-data.md": "eedbb2ebf76013b46d2090d6ffe9c3229c21767c75c9e4b82290dbbd10ec2e2d",
+        "references/security-and-quality.md": "44972c9823891ad1dc6c1a705c881e68e2a6285c8f01f4fa411468b0a019a120"
+      }
+    },
+    "springboot-backend-standard": {
+      "entries": {
+        "SKILL.md": "a77414dd9f1aa07e7348834679d79db1da993a09b50c5c0d16d9515b1e4a6e56",
+        "agents/": "directory",
+        "agents/openai.yaml": "4f1347709d38816eeb8d0b097acf85d3edec23c5ab4ecc7c2856b11b5ff52a60",
+        "references/": "directory",
+        "references/architecture-and-data.md": "49b3b0056d21126020aa55d8ccf0ece39e7e33114774273f8b2ff0d5630ee971",
+        "references/security-and-quality.md": "98a5fa67ccb35d6aece913f174e4dc468b42d088adeb49e5ea4126a78ec2721d"
+      }
+    },
+    "change-impact-analysis": {
+      "entries": {
+        "SKILL.md": "50eff28ec6f7747c4e71c86840da4036fffa474cdc2a52a05e4715db7693ffa6",
+        "agents/": "directory",
+        "agents/openai.yaml": "acb61109dd2c13a586ffa2c96723ae3d6972a2288adbf2e7408c4c00b19e9235",
+        "assets/": "directory",
+        "assets/change-impact-manifest-template.md": "5f0257078b7e3fdfd0064a3212748fa4b6c6d70bab79d604803003f560490995",
+        "references/": "directory",
+        "references/change-impact-manifest.md": "07d90aaa3b0127d0708ee684ab9c4b401b4abc69a973302424f9d7d6e186b2a9"
+      }
+    },
+    "data-consistency-regression-test": {
+      "entries": {
+        "SKILL.md": "83ff6845ed94c6948aa346312a4459392d2d21085595760569c15a3c2989f548",
+        "agents/": "directory",
+        "agents/openai.yaml": "86b06907c731a8a6b8bb1cd4a4e1962cb9a52e92d222d2fe4b5d8e233aed0bb9",
+        "assets/": "directory",
+        "assets/verification-report-template.md": "36afed931ffaf023c26736b7569f8307fef361ad27f992e75f1cfe38229b7cea",
+        "references/": "directory",
+        "references/verification-report.md": "cc0f618e10f45662aaadb4e4a160c4d9d7307c9d8946b91663ba41077d661072"
+      }
+    }
+  }
+}

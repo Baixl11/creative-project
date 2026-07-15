@@ -1,0 +1,4 @@
+interface:
+  display_name: "Vue TypeScript Web 规范"
+  short_description: "约束 Vue 3 SPA 状态、契约、安全、无障碍与发布"
+  default_prompt: "使用 $vue-typescript-web-standard 实现或审查这个 Vue 3 SPA 变更，并验证 Pinia 所有权与运行时契约。"

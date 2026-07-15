@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>小红书监控 · 笔记监控</title>
-    <link rel="stylesheet" href="assets/styles.css?v=20260630-provisional-trend">
+    <link rel="stylesheet" href="assets/styles.css?v=20260713-chart-caption">
   </head>
   <body>
     <div class="app-shell">
@@ -18,7 +18,7 @@
         </a>
         <nav class="nav-list">
           <a class="nav-item" href="index.html"><span>总览</span></a>
-          <a class="nav-item active" href="notes.html"><span>笔记监控</span></a>
+          <a class="nav-item active" href="notes.html" aria-current="page"><span>笔记监控</span></a>
           <a class="nav-item" href="trends.html"><span>趋势分析</span></a>
           <a class="nav-item" href="tasks.html"><span>采集任务</span></a>
           <a class="nav-item" href="settings.html"><span>账号配置</span></a>
@@ -44,14 +44,15 @@
                 </label>
                 <button class="button secondary" type="submit">应用</button>
               </form>
-              <div class="search-box">
+              <label class="search-box">
+                <span class="sr-only">搜索笔记标题</span>
                 <input type="search" placeholder="搜索笔记标题" data-notes-search>
-              </div>
-              <button class="button primary" data-refresh>刷新数据</button>
+              </label>
+              <button class="button primary" type="button" data-refresh>刷新数据</button>
             </div>
             <div class="control-row scope-row">
               <div class="scope-tabs" aria-label="账号视角">
-                <button class="scope-chip active" data-scope="all">全部账号</button>
+                <button class="scope-chip active" type="button" data-scope="all" aria-pressed="true">全部账号</button>
               </div>
             </div>
           </div>
@@ -68,6 +69,7 @@
 
           <div class="table-wrap">
             <table>
+              <caption class="sr-only">笔记监控数据，默认按发布时间倒序</caption>
               <thead>
                 <tr>
                   <th>笔记标题</th>
@@ -100,6 +102,6 @@
         </section>
       </main>
     </div>
-    <script src="assets/app.js?v=20260701-rolling-range"></script>
+    <script type="module" src="assets/app.js?v=20260713-quality"></script>
   </body>
 </html>

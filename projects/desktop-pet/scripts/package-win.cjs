@@ -24,6 +24,20 @@ function assertExists(targetPath, label) {
   }
 }
 
+function assertWindowsPackageEnvironment() {
+  if (process.platform !== "win32") {
+    throw new Error(
+      "package:win currently repackages the Windows Electron runtime and must be run on Windows. Run this command on a Windows machine, or replace this script with a cross-platform packager such as electron-builder if cross-building is required."
+    );
+  }
+
+  if (!fs.existsSync(electronDist)) {
+    throw new Error(
+      `Electron runtime directory not found: ${electronDist}. Run "npm run install:deps" so Electron can download its runtime before packaging.`
+    );
+  }
+}
+
 function copyDirectory(source, destination, options = {}) {
   const ignore = options.ignore ?? (() => false);
 
@@ -67,6 +81,7 @@ function isPackagedAppRunning() {
 
 function main() {
   assertInsideProject(outputDir);
+  assertWindowsPackageEnvironment();
   assertExists(path.join(electronDist, "electron.exe"), "Electron runtime");
   assertExists(path.join(projectRoot, "dist", "index.html"), "Renderer build");
   assertExists(path.join(projectRoot, "electron", "main.cjs"), "Electron main process");
@@ -101,4 +116,9 @@ function main() {
   console.log("Run the executable from inside release/win-unpacked so Electron can find its runtime files.");
 }
 
-main();
+try {
+  main();
+} catch (error) {
+  console.error(error instanceof Error ? error.message : error);
+  process.exit(1);
+}

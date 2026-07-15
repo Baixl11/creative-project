@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { getPetActions } from "../pets/actions";
 import { getPetDefinition } from "../pets/registry";
 import { PetAction, PetAppearance, PetState } from "../types";
@@ -74,6 +74,37 @@ export function PetScene({ selectedPetId, appearance, onOpenSettings }: PetScene
     }, delay);
   }
 
+  function cancelDrag() {
+    if (!dragRef.current.active) {
+      return;
+    }
+    dragRef.current.active = false;
+    dragRef.current.pendingBounds = false;
+    pettingRef.current.startedAt = 0;
+    applyState("idle");
+    window.desktopPet?.setMouseEventsIgnored(true);
+  }
+
+  function finishDrag(event: ReactPointerEvent<HTMLElement>) {
+    if (!dragRef.current.active) {
+      return;
+    }
+    const moved = Math.abs(event.screenX - dragRef.current.startX) + Math.abs(event.screenY - dragRef.current.startY);
+    dragRef.current.active = false;
+    dragRef.current.pendingBounds = false;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+
+    if (moved < 6) {
+      applyState("clicked");
+      resetToIdle(550);
+    } else {
+      applyState("hover");
+      resetToIdle(900);
+    }
+  }
+
   useEffect(() => {
     actionIndexRef.current = 0;
     setActiveAction(undefined);
@@ -146,7 +177,7 @@ export function PetScene({ selectedPetId, appearance, onOpenSettings }: PetScene
           dragRef.current.windowX = bounds.x;
           dragRef.current.windowY = bounds.y;
           dragRef.current.pendingBounds = false;
-        });
+        }).catch(cancelDrag);
       }}
       onPointerMove={(event) => {
         if (dragRef.current.active) {
@@ -173,21 +204,10 @@ export function PetScene({ selectedPetId, appearance, onOpenSettings }: PetScene
         pettingRef.current.lastY = event.clientY;
       }}
       onPointerUp={(event) => {
-        if (!dragRef.current.active) {
-          return;
-        }
-        const moved = Math.abs(event.screenX - dragRef.current.startX) + Math.abs(event.screenY - dragRef.current.startY);
-        dragRef.current.active = false;
-        event.currentTarget.releasePointerCapture(event.pointerId);
-
-        if (moved < 6) {
-          applyState("clicked");
-          resetToIdle(550);
-        } else {
-          applyState("hover");
-          resetToIdle(900);
-        }
+        finishDrag(event);
       }}
+      onPointerCancel={cancelDrag}
+      onLostPointerCapture={cancelDrag}
       onDoubleClick={onOpenSettings}
       onContextMenu={(event) => {
         event.preventDefault();

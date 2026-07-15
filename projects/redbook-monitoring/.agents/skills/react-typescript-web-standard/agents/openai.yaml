@@ -1,0 +1,4 @@
+interface:
+  display_name: "React TypeScript Web 规范"
+  short_description: "约束 React SPA 状态、契约、安全、无障碍与发布"
+  default_prompt: "使用 $react-typescript-web-standard 实现或审查这个 React SPA 变更，并验证状态所有权与运行时契约。"

@@ -16,12 +16,18 @@ contextBridge.exposeInMainWorld("desktopPet", {
   },
   onFlushSettings: (callback) => {
     const listener = async (_event, requestId) => {
+      let errorMessage;
       try {
         await callback();
       } catch (error) {
         console.error("Failed to flush settings before close.", error);
+        errorMessage = error instanceof Error ? error.message : String(error);
       } finally {
-        ipcRenderer.send("pet:settings-flushed", requestId);
+        ipcRenderer.send("pet:settings-flushed", {
+          requestId,
+          ok: !errorMessage,
+          error: errorMessage
+        });
       }
     };
     ipcRenderer.on("pet:flush-settings", listener);

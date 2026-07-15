@@ -4,12 +4,14 @@ import { listAuthSessions, startManualLogin } from "./authSessions.js";
 import { collectXhsAccount } from "./collectors/xhsCollector.js";
 import { config } from "./config.js";
 import { openDatabase } from "./database.js";
-import { deleteAccountCredentials, getCredentialStatus, saveAccountCredentials } from "./credentials.js";
+import * as credentialStore from "./credentials.js";
+import { applySecurityHeaders, assertLocalHost } from "./httpSecurity.js";
 import { createAccountsRepository } from "./repositories/accounts.js";
 import { createCollectionDataRepository } from "./repositories/collectionData.js";
 import { createDashboardRepository } from "./repositories/dashboard.js";
 import { createSchedulerSettingsRepository } from "./repositories/schedulerSettings.js";
 import { createCollectionScheduler } from "./scheduler.js";
+import { createAccountConfigurationService } from "./services/accountConfiguration.js";
 
 const app = express();
 const db = openDatabase();
@@ -17,6 +19,10 @@ const accountsRepository = createAccountsRepository(db);
 const collectionDataRepository = createCollectionDataRepository(db);
 const dashboardRepository = createDashboardRepository(db);
 const scheduleRepository = createSchedulerSettingsRepository(db);
+const accountConfigurationService = createAccountConfigurationService({
+  accountsRepository,
+  credentialStore,
+});
 const collectionScheduler = createCollectionScheduler({
   accountsRepository,
   collectionDataRepository,
@@ -25,7 +31,9 @@ const collectionScheduler = createCollectionScheduler({
   scheduleRepository,
 });
 
-app.use(express.json());
+assertLocalHost(config.host, config.allowRemoteAccess);
+applySecurityHeaders(app);
+app.use(express.json({ limit: "64kb" }));
 app.use(express.static(config.publicDir, {
   extensions: ["html"],
   index: "index.html",
@@ -35,7 +43,7 @@ app.get("/api/health", (_request, response) => {
   response.json({
     ok: true,
     database: "connected",
-    storage: config.databasePath,
+    storage: "sqlite",
   });
 });
 
@@ -44,7 +52,7 @@ app.get("/api/accounts", (_request, response) => {
 });
 
 app.get("/api/credentials/status", (_request, response) => {
-  response.json(getCredentialStatus(accountsRepository.list()));
+  response.json(credentialStore.getCredentialStatus(accountsRepository.list()));
 });
 
 app.get("/api/auth/sessions", (_request, response) => {
@@ -101,22 +109,7 @@ app.post("/api/auth/sessions/:credentialKey/bootstrap", (request, response, next
 
 app.post("/api/accounts", (request, response, next) => {
   try {
-    const input = request.body || {};
-    const loginMethod = input.loginMethod === "wechat" ? "wechat" : "password";
-    const username = String(input.username || "").trim();
-    const password = String(input.password || "");
-
-    if (loginMethod === "password" && (!username || !password)) {
-      throw Object.assign(new Error("手机号/密码登录需要填写账号和密码"), { statusCode: 400 });
-    }
-
-    const account = accountsRepository.create({ ...input, loginMethod });
-    saveAccountCredentials(account, {
-      loginMethod,
-      username,
-      password,
-      profileUrl: account.profileUrl,
-    });
+    const account = accountConfigurationService.create(request.body || {});
 
     response.status(201).json({ account });
   } catch (error) {
@@ -126,8 +119,7 @@ app.post("/api/accounts", (request, response, next) => {
 
 app.delete("/api/accounts/:id", (request, response, next) => {
   try {
-    const account = accountsRepository.delete(Number(request.params.id));
-    deleteAccountCredentials(account);
+    const account = accountConfigurationService.delete(Number(request.params.id));
     response.json({ deleted: account });
   } catch (error) {
     next(error);
@@ -199,7 +191,7 @@ app.use((error, _request, response, _next) => {
   const statusCode = error.statusCode || 500;
   response.status(statusCode).json({
     error: {
-      message: error.message || "服务器内部错误",
+      message: statusCode >= 500 ? "服务器内部错误，请查看本地服务日志" : (error.message || "请求处理失败"),
     },
   });
 });

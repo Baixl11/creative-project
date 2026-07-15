@@ -9,11 +9,14 @@ Build a cross-platform desktop pet application for Windows and macOS. The app sh
 ## Status
 
 - Current phase: Implementation
-- Last updated: 2026-06-17
-- Current focus: Additively upload the project to `Baixl11/creative-project` under `projects/desktop-pet-line-dog`, then continue manual runtime verification after aligning settings with automatic apply plus Revert.
+- Last updated: 2026-07-14
+- Current focus: Continue manual desktop runtime verification and run Windows packaging on a Windows machine after the July review fixes.
 
 ## Now
 
+- [x] Fix the error points found in the July project review.
+  - Scope: remove the deprecated npm Electron mirror config warning, add a project-local dependency install helper that sets Electron mirror/cache env vars, make preview capture find Chromium browsers across macOS/Windows/Linux and fail clearly when no renderer is available, make Windows packaging fail clearly on non-Windows/incomplete Electron installs, harden settings close-time flush failure handling, and clear drag state on pointer cancellation/lost capture.
+  - Verification: `npm run typecheck`, script syntax checks, `npm run build`, `npm audit --audit-level=high`, `node scripts/capture-preview-page.cjs`, `node scripts/verify-package.cjs`, and `npm run verify` pass on macOS. Chrome headless exits with `SIGABRT` in this environment, and the new no-dependency Node fallback generates `docs/codex/pet-redesign-preview.png`. `node scripts/package-win.cjs` now fails cleanly on macOS with an explicit Windows-only packaging message; Windows package/runtime verification still needs a Windows machine.
 - [ ] Additively upload this project to GitHub repository `Baixl11/creative-project` under `projects/desktop-pet-line-dog`.
   - Scope: clone the existing remote repository, verify the target subfolder does not already exist, copy this project while honoring `.gitignore` exclusions, avoid generated dependency/build outputs such as `node_modules`, `dist`, `release`, `.npm-cache`, and logs, commit only the additive project folder, and push to `main` over SSH.
   - Verification: clone attempt reached GitHub but failed with `Permission denied (publickey)`; continue after SSH access to `Baixl11/creative-project` is available, then confirm no target overwrite, inspect the staged file list before commit, verify ignored/generated files are absent, and confirm the pushed commit is on `origin/main`.
@@ -80,9 +83,9 @@ Build a cross-platform desktop pet application for Windows and macOS. The app sh
 - [ ] GitHub upload over SSH.
   - Blocker: `git clone git@github.com:Baixl11/creative-project.git C:\tmp\creative-project-upload` reached GitHub but failed with `Permission denied (publickey)`.
   - Needed from user: Configure a GitHub SSH key with access to `Baixl11/creative-project`, or provide another approved authentication method.
-- [ ] macOS runtime verification.
-  - Blocker: Current environment is Windows.
-  - Needed from user: Run on a macOS machine or provide a macOS verification environment.
+- [ ] Windows package and runtime verification.
+  - Blocker: Current environment is macOS; `package:win` intentionally requires a Windows Electron runtime.
+  - Needed from user: Run `npm.cmd run install:deps`, `npm.cmd run verify`, and `npm.cmd run package:win` on Windows, then manually test `release/win-unpacked/DesktopPetLineDog.exe`.
 
 ## Done
 
@@ -162,7 +165,7 @@ Build a cross-platform desktop pet application for Windows and macOS. The app sh
 - Electron + 3D rendering may exceed performance targets if animations are not throttled.
 - Vite currently warns that the initial renderer chunk is larger than 500 kB because Three.js is bundled up front.
 - Current Windows output is an unpacked app directory, not a signed installer or one-file executable.
-- The repository is not currently a git repository, so change tracking depends on local file state until git is initialized by the user.
+- The project lives inside the parent `creative-project` git repository; unrelated sibling-project changes may appear in `git status` and should be left alone.
 - The user prompt included a goal placeholder, so the active goal is taken from `docs/codex/PROJECT_GOAL.md` and the existing PRD.
 
 ## Verification Queue
@@ -171,5 +174,5 @@ Build a cross-platform desktop pet application for Windows and macOS. The app sh
 - [ ] After UI implementation: user visually verifies the pet window appears, can be dragged, and can be closed.
 - [ ] After visual update: user confirms the fluffy line dog matches the intended style closely enough.
 - [ ] After settings implementation: user verifies settings auto-apply, revert, reset, and corrupted config fallback.
-- [x] After packaging: verify Windows `.exe` output locally.
-- [ ] macOS verification requires a macOS environment.
+- [x] After packaging: previous Windows `.exe` output was verified locally on Windows.
+- [ ] After July fixes: rerun Windows package and desktop runtime verification on a Windows machine.

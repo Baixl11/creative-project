@@ -49,8 +49,10 @@ Continue from the packaged transparent desktop pet proof of concept and refine r
 Install dependencies:
 
 ```powershell
-npm.cmd install
+npm.cmd run install:deps
 ```
+
+On macOS/Linux, use `npm run install:deps`. This helper runs `npm ci` with a project-local Electron cache and an Electron mirror so Electron's binary download is less likely to fail or write outside the project cache. You can override the mirror with `ELECTRON_MIRROR`.
 
 Run the app in development:
 
@@ -70,7 +72,9 @@ Run the full local verification gate:
 npm.cmd run verify
 ```
 
-This runs type checking, production build, preview image capture, critical/high dependency audits, and Windows unpacked packaging. If headless Edge cannot capture the preview because of local GPU/browser issues, the capture script writes a local fallback preview image to `docs/codex/pet-redesign-preview.png` and records the fallback in command output.
+This runs type checking, production build, preview image capture, and critical/high dependency audits. On Windows, it also runs Windows unpacked packaging; on macOS/Linux, it skips the Windows-only package step and prints that packaging should be run on Windows. If headless Chromium capture fails because of local GPU/browser issues, the capture script writes a local fallback preview image to `docs/codex/pet-redesign-preview.png` and records the fallback in command output.
+
+Preview capture uses a Chromium-compatible browser. Set `BROWSER_PATH`, `MSEDGE_PATH`, or `CHROME_PATH` if the browser is installed in a non-standard location. The richer local fallback renderer uses Windows PowerShell when available; all platforms also have a no-dependency Node fallback renderer.
 
 Capture only the pet preview image:
 
@@ -86,9 +90,11 @@ npm.cmd run package:win
 
 This produces `release/win-unpacked/DesktopPetLineDog.exe`. Keep the full `release/win-unpacked` directory together when running or sharing it, because the executable depends on the Electron runtime files beside it.
 
+`npm.cmd run package:win` currently repackages the Windows Electron runtime and must be run on Windows. On macOS/Linux, use `npm.cmd run build` for renderer verification and run Windows packaging on a Windows machine.
+
 If the packaged desktop pet is already running, exit it from the tray menu before running `npm.cmd run package:win`; the packaging script checks for `DesktopPetLineDog.exe` before replacing `release/win-unpacked`.
 
-The project uses a local `.npmrc` with an Electron mirror because the default Electron binary download endpoint timed out in this environment.
+The project keeps npm's cache under `.npm-cache/`. Electron download mirror/cache configuration is handled by `scripts/install-deps.cjs` to avoid unsupported custom `.npmrc` keys in newer npm versions.
 
 ## Pet Definitions
 

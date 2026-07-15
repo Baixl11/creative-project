@@ -1,0 +1,4 @@
+interface:
+  display_name: "Next.js 全栈开发规范"
+  short_description: "约束 App Router、授权、缓存、测试与部署"
+  default_prompt: "使用 $nextjs-fullstack-standard 实现或审查这个 App Router 变更，并按当前 Next.js 版本验证。"

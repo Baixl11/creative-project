@@ -1,0 +1,4 @@
+interface:
+  display_name: "AI 开发技术选型与规范编排"
+  short_description: "为新项目比较有规范覆盖的技术栈、架构与长期工程约束"
+  default_prompt: "使用 $ai-dev-tech-stack-orchestrator 对这个新项目进行技术栈与架构决策。"

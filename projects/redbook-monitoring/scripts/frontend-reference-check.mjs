@@ -5,6 +5,12 @@ const declaredFunctions = new Set(
   [...source.matchAll(/\bfunction\s+([A-Za-z_$][\w$]*)\s*\(/g)]
     .map((match) => match[1]),
 );
+const importedBindings = new Set(
+  [...source.matchAll(/import\s*\{([\s\S]*?)\}\s*from/g)]
+    .flatMap((match) => match[1].split(","))
+    .map((name) => name.trim().split(/\s+as\s+/).at(-1))
+    .filter(Boolean),
+);
 const knownGlobals = new Set([
   "Array",
   "Boolean",
@@ -94,6 +100,7 @@ for (const match of source.matchAll(/\b([A-Za-z_$][\w$]*)\s*\(/g)) {
   const before = source.slice(Math.max(0, match.index - 12), match.index);
   if (
     declaredFunctions.has(name)
+    || importedBindings.has(name)
     || knownGlobals.has(name)
     || languageKeywords.has(name)
     || allowedMethods.has(name)
@@ -110,4 +117,8 @@ if (suspicious.length) {
   throw new Error(`发现可能未定义的前端函数调用：${[...new Set(suspicious)].sort().join(", ")}`);
 }
 
-console.log(JSON.stringify({ ok: true, checkedFunctions: declaredFunctions.size }, null, 2));
+console.log(JSON.stringify({
+  ok: true,
+  checkedFunctions: declaredFunctions.size,
+  checkedImports: importedBindings.size,
+}, null, 2));

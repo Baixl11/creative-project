@@ -346,7 +346,7 @@ function createPetWindow() {
       preload: path.join(__dirname, "preload.cjs"),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: false
+      sandbox: true
     }
   });
 
@@ -394,7 +394,7 @@ function createSettingsWindow() {
       preload: path.join(__dirname, "preload.cjs"),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: false
+      sandbox: true
     }
   });
 
@@ -445,14 +445,21 @@ function flushSettingsBeforeClose(windowToClose) {
   let settled = false;
   let closeTimer;
 
-  function closeAfterFlush() {
+  function settleFlush() {
     if (settled) {
-      return;
+      return false;
     }
     settled = true;
     clearTimeout(closeTimer);
     ipcMain.removeListener("pet:settings-flushed", onSettingsFlushed);
     settingsWindowFlushInProgress = false;
+    return true;
+  }
+
+  function closeAfterFlush() {
+    if (!settleFlush()) {
+      return;
+    }
     if (windowToClose.isDestroyed()) {
       return;
     }
@@ -460,8 +467,26 @@ function flushSettingsBeforeClose(windowToClose) {
     windowToClose.close();
   }
 
-  function onSettingsFlushed(_event, flushedRequestId) {
+  function keepOpenAfterFailedFlush(error) {
+    if (!settleFlush()) {
+      return;
+    }
+    if (error) {
+      console.error(`Settings flush failed; keeping settings window open. ${error}`);
+    }
+    if (!windowToClose.isDestroyed()) {
+      windowToClose.show();
+      windowToClose.focus();
+    }
+  }
+
+  function onSettingsFlushed(_event, payload) {
+    const flushedRequestId = isPlainObject(payload) ? payload.requestId : payload;
     if (flushedRequestId === requestId) {
+      if (isPlainObject(payload) && payload.ok === false) {
+        keepOpenAfterFailedFlush(payload.error);
+        return;
+      }
       closeAfterFlush();
     }
   }
@@ -481,7 +506,7 @@ async function capturePetPreview() {
       preload: path.join(__dirname, "preload.cjs"),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: false
+      sandbox: true
     }
   });
 

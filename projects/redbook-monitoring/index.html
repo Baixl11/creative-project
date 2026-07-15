@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>小红书监控 · 账号总览</title>
-    <link rel="stylesheet" href="assets/styles.css?v=20260630-provisional-trend">
+    <link rel="stylesheet" href="assets/styles.css?v=20260713-chart-caption">
   </head>
   <body>
     <div class="app-shell">
@@ -17,7 +17,7 @@
           </span>
         </a>
         <nav class="nav-list">
-          <a class="nav-item active" href="index.html"><span>总览</span></a>
+          <a class="nav-item active" href="index.html" aria-current="page"><span>总览</span></a>
           <a class="nav-item" href="notes.html"><span>笔记监控</span></a>
           <a class="nav-item" href="trends.html"><span>趋势分析</span></a>
           <a class="nav-item" href="tasks.html"><span>采集任务</span></a>
@@ -52,7 +52,7 @@
             </div>
             <div class="control-row scope-row">
               <div class="scope-tabs" aria-label="账号视角">
-                <button class="scope-chip active" data-scope="all">全部账号</button>
+                <button class="scope-chip active" type="button" data-scope="all" aria-pressed="true">全部账号</button>
               </div>
             </div>
           </div>
@@ -121,19 +121,28 @@
           </article>
         </section>
 
-        <section class="account-summary-grid" aria-label="账号对比" data-account-summary>
-          <article class="summary-account-card">
-            <div class="account-title">
-              <strong>账号数据加载中</strong>
-              <span class="status-pill small"><span class="status-dot warning"></span>待同步</span>
+        <section class="account-summary-panel" aria-label="账号对比" data-account-summary>
+          <div class="account-summary-heading">
+            <div>
+              <h2>账号对比</h2>
+              <p>按账号查看最新粉丝、阅读和涨粉状态。</p>
             </div>
-            <p class="account-subline">小红书号：待同步</p>
-            <div class="summary-metrics">
-              <span><b>0</b> 粉丝</span>
-              <span><b>0</b> 阅读</span>
-              <span><b>0</b> 最新日涨粉</span>
-            </div>
-          </article>
+            <span class="tag">加载中</span>
+          </div>
+          <div class="account-summary-list">
+            <article class="summary-account-card">
+              <div class="account-title">
+                <strong>账号数据加载中</strong>
+                <span class="status-pill small"><span class="status-dot warning"></span>待同步</span>
+              </div>
+              <p class="account-subline">小红书号：待同步</p>
+              <div class="summary-metrics">
+                <span><b>0</b> 粉丝</span>
+                <span><b>0</b> 阅读</span>
+                <span><b>0</b> 最新日涨粉</span>
+              </div>
+            </article>
+          </div>
         </section>
 
         <section class="content-grid two">
@@ -175,6 +184,6 @@
         </section>
       </main>
     </div>
-    <script src="assets/app.js?v=20260701-rolling-range"></script>
+    <script type="module" src="assets/app.js?v=20260713-quality"></script>
   </body>
 </html>

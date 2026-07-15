@@ -9,7 +9,7 @@
 - 多账号配置：支持添加、删除和设置默认监控账号。
 - 本地凭据管理：通过 `.env` 和账号设置页维护手机号/密码或微信扫码登录方式。
 - 授权 session 保存：使用 Playwright 完成人工登录授权，并将登录态保存在本地 `data/xhs-auth/`。
-- 定时采集：服务启动后每天 10:00 自动采集，也支持在页面中手动触发刷新。
+- 定时采集：支持每天、每周或每月按分钟配置自动采集，也支持在页面中手动触发刷新。
 - 总览看板：展示账号基础指标、最新完整日数据、周期累计数据和近期采集状态。
 - 笔记监控：同步已发布笔记列表，并展示阅读、曝光、互动等指标。
 - 趋势分析：基于 SQLite 中的日粒度指标查看粉丝、阅读、曝光和互动趋势。
@@ -34,7 +34,10 @@ redbook-monitoring/
     authSessions.js       # Playwright 登录态管理
     credentials.js        # 本地凭据读写
     database.js           # 数据库初始化
+    errorSanitizer.js     # 公开日志与异常脱敏
+    httpSecurity.js       # 本地服务安全响应头与监听限制
     scheduler.js          # 定时/手动采集调度
+    services/             # 跨 SQLite 与本地凭据的业务编排
     server.js             # Express 服务入口
   index.html              # 总览页
   notes.html              # 笔记监控页
@@ -106,11 +109,24 @@ XHS_MAIN_LOGIN_METHOD=password
 
 ```bash
 npm run check
+npm test
 npm run test:consistency
+npm run test:background-collection
+npm run test:ui
 ```
 
-`npm run check` 会对服务端、采集器、仓储层、前端脚本和一致性检查脚本做语法检查；`npm run test:consistency` 会校验前端页面引用、后端路由和静态资源的一致性。
+`npm run check` 会运行语法和静态一致性检查；`npm test` 覆盖账号配置补偿回滚、数据库迁移、日志脱敏与本地访问安全；`npm run test:ui` 会使用临时 SQLite 启动隔离服务，并验证五个页面在桌面和移动端的布局、表单标签、筛选状态与弹窗交互。GitHub Actions 会自动执行以上核心质量门禁。
+
+## 数据与安全约束
+
+- SQLite 使用版本化事务迁移，并启用外键、WAL 与 busy timeout。
+- 账号配置横跨 SQLite 与 `.env` 时执行补偿回滚；`.env` 使用同目录临时文件原子替换并保持 `0600` 权限。
+- 采集日志在写入前移除本地路径、浏览器启动参数和多行运行细节。
+- 服务默认只监听 loopback 地址，并为页面与 API 设置 CSP、`nosniff`、Frame、Referrer 与 Permissions Policy。
+- 当小红书来源未提供字段时保留“待采集”语义，不用模拟值或 `0` 冒充真实数据。
+
+项目级工程规范位于 `.agents/skills/express-vanilla-web-standard/`，用于后续实现和审查 Express + 原生 Web 变更。
 
 ## 当前状态
 
-项目已具备本地 Demo 闭环：配置账号、完成授权、启动服务、触发采集、查看总览/笔记/趋势/任务状态。后续可继续补充部署方案、异常告警、数据导出和更细粒度的运营分析指标。
+项目已具备本地使用闭环：配置账号、完成授权、启动服务、触发采集、查看总览/笔记/趋势/任务状态，并通过单元、一致性和 UI 自动化测试约束真实数据口径。后续可继续补充部署方案、异常告警、数据导出和更细粒度的运营分析指标。

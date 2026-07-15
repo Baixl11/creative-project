@@ -2,6 +2,7 @@ import fs from "node:fs";
 import { DatabaseSync } from "node:sqlite";
 
 import { config } from "./config.js";
+import { sanitizeCollectionLogMessage } from "./errorSanitizer.js";
 
 const nowSql = "datetime('now')";
 
@@ -10,17 +11,21 @@ function normalizeKey(value) {
 }
 
 export function openDatabase() {
-  fs.mkdirSync(config.dataDir, { recursive: true });
+  fs.mkdirSync(config.dataDir, { recursive: true, mode: 0o700 });
+  fs.chmodSync(config.dataDir, 0o700);
 
   const db = new DatabaseSync(config.databasePath);
+  fs.chmodSync(config.databasePath, 0o600);
   db.exec("PRAGMA foreign_keys = ON;");
-  migrate(db);
+  db.exec("PRAGMA journal_mode = WAL;");
+  db.exec("PRAGMA busy_timeout = 5000;");
+  runMigrations(db);
   seed(db);
 
   return db;
 }
 
-function migrate(db) {
+function createInitialSchema(db) {
   db.exec(`
     CREATE TABLE IF NOT EXISTS accounts (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -159,6 +164,59 @@ function migrate(db) {
     CREATE INDEX IF NOT EXISTS idx_collection_audits_account
     ON collection_audits(account_id, id DESC);
   `);
+}
+
+function sanitizeExistingCollectionLogs(db) {
+  const rows = db.prepare("SELECT id, message FROM collection_logs").all();
+  const update = db.prepare("UPDATE collection_logs SET message = ? WHERE id = ?");
+
+  for (const row of rows) {
+    const message = sanitizeCollectionLogMessage(row.message);
+    if (message !== row.message) {
+      update.run(message, row.id);
+    }
+  }
+}
+
+const migrations = [
+  { version: 1, name: "initial_schema", apply: createInitialSchema },
+  { version: 2, name: "sanitize_collection_logs", apply: sanitizeExistingCollectionLogs },
+];
+
+export function runMigrations(db) {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS schema_migrations (
+      version INTEGER PRIMARY KEY,
+      name TEXT NOT NULL,
+      applied_at TEXT NOT NULL DEFAULT (${nowSql})
+    );
+  `);
+
+  const appliedVersions = new Set(
+    db.prepare("SELECT version FROM schema_migrations").all().map((row) => Number(row.version)),
+  );
+  const recordMigration = db.prepare(`
+    INSERT INTO schema_migrations (version, name)
+    VALUES (?, ?)
+  `);
+
+  for (const migration of migrations) {
+    if (appliedVersions.has(migration.version)) {
+      continue;
+    }
+
+    db.exec("BEGIN IMMEDIATE;");
+    try {
+      migration.apply(db);
+      recordMigration.run(migration.version, migration.name);
+      db.exec("COMMIT;");
+    } catch (error) {
+      db.exec("ROLLBACK;");
+      throw new Error(`数据库迁移 ${migration.version} (${migration.name}) 失败：${error.message}`, {
+        cause: error,
+      });
+    }
+  }
 }
 
 function addColumnIfMissing(db, tableName, columnName, definition) {

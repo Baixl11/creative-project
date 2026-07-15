@@ -1,3 +1,11 @@
+import {
+  attachChartTooltip,
+  chartCanvasWidth,
+  createChartScrollPane,
+  createChartTooltip,
+  createSvgNode,
+} from "./charting.js";
+
 const refreshButtons = document.querySelectorAll("[data-refresh]");
 const saveButton = document.querySelector("[data-save]");
 const accountForm = document.querySelector("[data-account-form]");
@@ -174,17 +182,6 @@ function maxDateText(left, right) {
 
 function compactDateLabel(value) {
   return shortDateLabel(value);
-}
-
-function chartCanvasWidth(pointCount, minWidth = 640, pointWidth = 56) {
-  return Math.max(minWidth, Math.max(1, pointCount) * pointWidth);
-}
-
-function createChartScrollPane(width, className = "chart-scroll-pane") {
-  const pane = document.createElement("div");
-  pane.className = className;
-  pane.style.setProperty("--chart-canvas-width", `${width}px`);
-  return pane;
 }
 
 function metricDeltaSuffix(record = {}) {
@@ -644,6 +641,7 @@ function createScopeChip({ label, caption, scope, active }) {
   button.className = active ? "scope-chip active" : "scope-chip";
   button.type = "button";
   button.dataset.scope = scope;
+  button.setAttribute("aria-pressed", String(active));
   labelElement.textContent = label;
   button.append(labelElement);
 
@@ -1356,6 +1354,42 @@ function createSummaryAccountCard(account) {
   return card;
 }
 
+function renderAccountSummaryCards(accounts = []) {
+  if (!accountSummary) {
+    return;
+  }
+
+  const heading = document.createElement("div");
+  const headingText = document.createElement("div");
+  const title = document.createElement("h2");
+  const description = document.createElement("p");
+  const tag = document.createElement("span");
+  const list = document.createElement("div");
+  const safeAccounts = accounts.length ? accounts : [];
+
+  heading.className = "account-summary-heading";
+  title.textContent = selectedAccountId() && safeAccounts[0] ? "当前账号对比" : "账号对比";
+  description.textContent = selectedAccountId()
+    ? "查看当前账号的最新粉丝、完整日阅读和涨粉状态。"
+    : "按账号拆分最新粉丝、完整日阅读和涨粉状态。";
+  tag.className = "tag";
+  tag.textContent = `${safeAccounts.length || 0} 个账号`;
+  headingText.append(title, description);
+  heading.append(headingText, tag);
+
+  list.className = "account-summary-list";
+  if (safeAccounts.length) {
+    list.append(...safeAccounts.map(createSummaryAccountCard));
+  } else {
+    const empty = document.createElement("article");
+    empty.className = "summary-account-card is-empty";
+    empty.textContent = "暂无账号数据，完成一次采集后展示。";
+    list.append(empty);
+  }
+
+  accountSummary.replaceChildren(heading, list);
+}
+
 function createMetricValue(value) {
   const element = document.createElement("b");
   element.textContent = typeof value === "number" ? formatNumber(value) : (value || "待采集");
@@ -1404,87 +1438,6 @@ function renderInsights(totals, accounts) {
   ));
 
   insightList.replaceChildren(...items);
-}
-
-function createSvgNode(name, attrs = {}) {
-  const node = document.createElementNS("http://www.w3.org/2000/svg", name);
-  Object.entries(attrs).forEach(([key, value]) => {
-    node.setAttribute(key, String(value));
-  });
-  return node;
-}
-
-function createChartTooltip(container) {
-  const tooltip = document.createElement("div");
-  tooltip.className = "chart-tooltip";
-  tooltip.hidden = true;
-  tooltip.setAttribute("role", "tooltip");
-  container.append(tooltip);
-  return tooltip;
-}
-
-function renderTooltipContent(tooltip, title, rows = []) {
-  const titleElement = document.createElement("strong");
-  titleElement.textContent = title;
-  const rowElements = rows.map(([label, value]) => {
-    const row = document.createElement("span");
-    const labelElement = document.createElement("em");
-    const valueElement = document.createElement("b");
-    labelElement.textContent = label;
-    valueElement.textContent = value;
-    row.append(labelElement, valueElement);
-    return row;
-  });
-  tooltip.replaceChildren(titleElement, ...rowElements);
-}
-
-function positionChartTooltip(container, tooltip, anchor) {
-  const containerRect = container.getBoundingClientRect();
-  const anchorRect = anchor.getBoundingClientRect();
-  const tooltipRect = tooltip.getBoundingClientRect();
-  const safeInset = 12;
-  const anchorCenter = anchorRect.left + anchorRect.width / 2 - containerRect.left;
-  const left = Math.min(
-    Math.max(anchorCenter, tooltipRect.width / 2 + safeInset),
-    containerRect.width - tooltipRect.width / 2 - safeInset,
-  );
-  const top = Math.max(anchorRect.top - containerRect.top - 10, tooltipRect.height + safeInset);
-
-  tooltip.style.left = `${left}px`;
-  tooltip.style.top = `${top}px`;
-}
-
-function attachChartTooltip({
-  container,
-  tooltip,
-  target,
-  activeElement = target,
-  title,
-  rows,
-}) {
-  function show() {
-    renderTooltipContent(tooltip, title, rows);
-    tooltip.hidden = false;
-    tooltip.classList.add("is-visible");
-    activeElement.classList.add("is-hovered");
-    positionChartTooltip(container, tooltip, target);
-  }
-
-  function hide() {
-    tooltip.classList.remove("is-visible");
-    activeElement.classList.remove("is-hovered");
-    window.setTimeout(() => {
-      if (!tooltip.classList.contains("is-visible")) {
-        tooltip.hidden = true;
-      }
-    }, 120);
-  }
-
-  target.addEventListener("mouseenter", show);
-  target.addEventListener("mousemove", show);
-  target.addEventListener("focus", show);
-  target.addEventListener("mouseleave", hide);
-  target.addEventListener("blur", hide);
 }
 
 function renderInteractionTrend(series = [], provisional = null) {
@@ -1697,9 +1650,7 @@ async function loadOverview() {
     if (overviewStatusTitle) {
       overviewStatusTitle.textContent = `数据已更新至 ${snapshotTimeLabel(totals.captured_at)}`;
     }
-    if (accountSummary) {
-      accountSummary.replaceChildren(...scopedAccounts.map(createSummaryAccountCard));
-    }
+    renderAccountSummaryCards(scopedAccounts);
     updateStatusSummary(accounts);
     renderInsights(totals, scopedAccounts);
     renderScopeTabs(accounts);
@@ -2353,9 +2304,24 @@ async function openScheduleDialog() {
   if (!scheduleDialog) {
     return;
   }
-  await loadSchedulerStatus();
-  populateScheduleForm();
-  scheduleDialog.showModal();
+
+  if (typeof scheduleDialog.showModal === "function" && !scheduleDialog.open) {
+    scheduleDialog.showModal();
+  }
+  if (scheduleFormMessage) {
+    scheduleFormMessage.className = "form-tip";
+    scheduleFormMessage.textContent = "正在读取当前采集计划。";
+  }
+
+  try {
+    await loadSchedulerStatus();
+    populateScheduleForm();
+  } catch (error) {
+    if (scheduleFormMessage) {
+      scheduleFormMessage.className = "form-tip error";
+      scheduleFormMessage.textContent = error.message || "采集计划读取失败。";
+    }
+  }
 }
 
 function closeScheduleDialog() {
@@ -2687,9 +2653,11 @@ document.addEventListener("click", async (event) => {
   selectedScope = chip.dataset.scope || "all";
   document.querySelectorAll(".scope-tabs .scope-chip").forEach((item) => {
     item.classList.remove("active");
+    item.setAttribute("aria-pressed", "false");
   });
   document.querySelectorAll(`.scope-chip[data-scope="${selectedScope}"]`).forEach((item) => {
     item.classList.add("active");
+    item.setAttribute("aria-pressed", "true");
   });
   await refreshScopedSections();
 });
