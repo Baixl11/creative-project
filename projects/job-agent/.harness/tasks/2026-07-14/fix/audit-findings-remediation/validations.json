@@ -1,0 +1,102 @@
+{
+  "schema_version": "1.0",
+  "commands": [
+    {
+      "name": "unit_tests",
+      "command": ".venv/bin/python -m unittest discover -s tests",
+      "status": "passed",
+      "started_at": "2026-07-14T13:21:35+08:00",
+      "finished_at": "2026-07-14T13:21:36+08:00",
+      "summary": "61 tests passed, including focused regressions and Streamlit rerun coverage"
+    },
+    {
+      "name": "evaluation_suite",
+      "command": ".venv/bin/python -m app.evaluate --manifest data/eval_cases/manifest.json --output-dir outputs/evaluations",
+      "status": "passed",
+      "summary": "3/3 cases passed: high 88, medium 60, low 16"
+    },
+    {
+      "name": "web_compile",
+      "command": ".venv/bin/python -m py_compile web_app.py",
+      "status": "passed",
+      "summary": "web_app.py compiled"
+    },
+    {
+      "name": "private_sample_cli",
+      "command": ".venv/bin/python -m app.main --jd data/my_jd.txt --resume data/my_resume.pdf --output outputs/my_report.md --json-output outputs/my_report.json",
+      "status": "skipped",
+      "summary": "Private fixture is not present in the repository",
+      "failure_reason": "data/my_jd.txt and data/my_resume.pdf are absent"
+    },
+    {
+      "name": "public_chinese_cli",
+      "command": ".venv/bin/python -m app.main --jd data/demo_jd_cn.txt --resume data/demo_resume_cn.txt --output outputs/demo_cn_report.md --json-output outputs/demo_cn_report.json",
+      "status": "passed",
+      "summary": "Public Chinese demo completed in mock mode with score 94"
+    },
+    {
+      "name": "bootstrap_plan_validate",
+      "command": ".venv/bin/python .agents/skills/harness-project-bootstrap/scripts/validate_plan.py --plan .harness/bootstrap-plan.yaml --target .",
+      "status": "passed",
+      "summary": "Plan is valid; 36 templates mapped"
+    },
+    {
+      "name": "tesseract_languages",
+      "command": "tesseract --list-langs",
+      "status": "passed",
+      "summary": "chi_sim, eng, osd and snum are available"
+    }
+  ],
+  "functional_checks": [
+    {
+      "name": "reproduced audit findings regression",
+      "kind": "unit_and_streamlit_apptest",
+      "command": ".venv/bin/python -m unittest discover -s tests",
+      "status": "passed",
+      "risk": "blocking",
+      "covers": ["evidence-safe rewrite", "PII filtering", "JD ignored sections", "concept matching", "evaluation exit code", "LLM errors and run mode", "UTF-8 errors", "ephemeral Web files", "Streamlit rerun"],
+      "summary": "Every reproduced issue has focused regression coverage; 61 tests passed",
+      "failure_reason": null
+    }
+  ],
+  "manual_checks": [
+    {
+      "name": "user acceptance",
+      "status": "needs_human_review",
+      "summary": "Machine verification is complete; final product acceptance remains with the user"
+    }
+  ],
+  "runtime_checks": [
+    {
+      "name": "Streamlit service start",
+      "tool": "streamlit_and_health_endpoint",
+      "entry": "http://localhost:8501",
+      "status": "passed",
+      "steps": ["start headless Streamlit", "request /_stcore/health", "inspect startup output"],
+      "expected": ["service reachable", "health response ok", "no blocking startup error"],
+      "observed": ["Uvicorn server started on :::8501", "health response ok", "app remained running for browser verification"],
+      "failure_reason": null,
+      "summary": "Runtime is healthy at http://localhost:8501"
+    }
+  ],
+  "interaction_checks": [
+    {
+      "name": "upload, generate, download and rerun",
+      "tool": "playwright_1.61_with_local_chrome",
+      "entry": "http://localhost:8501",
+      "status": "passed",
+      "steps": ["open page", "select upload mode", "upload JD and resume", "generate report", "download Markdown", "download JSON", "switch mode to trigger rerun", "verify result persists"],
+      "expected": ["result renders", "both downloads are valid", "JSON has no server path", "result survives rerun", "no blocking console/network errors"],
+      "observed": ["all five interaction phases passed", "downloaded Markdown contained report heading", "downloaded JSON contained safe filenames only", "result and download buttons remained after rerun"],
+      "screenshot": "snapshots/upload-generate-report.png",
+      "snapshot": "snapshots/upload-generate-report.snapshot.md",
+      "console_log": "logs/upload-generate-report-console.json",
+      "network_log": "logs/upload-generate-report-network.json",
+      "console_errors": 0,
+      "network_failures": 0,
+      "failure_reason": null,
+      "summary": "Real Chrome interaction passed at 1440x1000; rerun evidence is in snapshots/rerun-retains-result.png"
+    }
+  ],
+  "visual_checks": []
+}

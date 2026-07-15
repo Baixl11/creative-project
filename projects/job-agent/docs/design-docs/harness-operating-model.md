@@ -62,9 +62,9 @@
 - `real_sample_cli`：Run private real JD/PDF resume sample locally.，命令：`.venv/bin/python -m app.main --jd data/my_jd.txt --resume data/my_resume.pdf --output outputs/my_report.md --json-output outputs/my_report.json`
 - `bootstrap_plan_validate`：Validate bootstrap plan and template mapping.，命令：`.venv/bin/python .agents/skills/harness-project-bootstrap/scripts/validate_plan.py --plan .harness/bootstrap-plan.yaml --target .`
 
-## 仍未覆盖
+## 当前验证边界
 
-- No git branch or commit operations were run because the target directory is not a git repository.
-- No live LLM/API verification was run because mock mode is the safe default and no secret should be assumed.
-- Chinese screenshot OCR smoke now passes with a temporary Chinese JD image after installing `chi_sim`; real user screenshots still need manual quality checks.
-- No full browser interaction test was run during bootstrap; only Streamlit launch and curl healthcheck were previously validated.
+- 项目已位于父级 Git monorepo，任务分支、分阶段本地提交和任务状态同步均已实际执行。
+- mock 模式仍是安全默认值；没有 API key 时不运行真实 LLM/API 验证。
+- `chi_sim+eng` 已可用，真实用户截图的清晰度和 OCR 领域词仍需按样本检查。
+- Browser 插件不可用时，只有真实 Playwright/浏览器交互及完整证据可以作为替代；HTTP healthcheck 仍只代表服务可达。

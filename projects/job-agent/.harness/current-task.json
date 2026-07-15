@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0",
-  "task_key": "2026-05-06/feature/public-web-entry",
-  "title": "配置公网网页即点即用入口",
+  "task_key": "2026-07-14/fix/audit-findings-remediation",
+  "title": "修复项目审查发现的问题",
   "status": "ready_for_human_review",
-  "branch": "harness/feature/public-web-entry",
-  "updated_at": "2026-05-06",
-  "summary": "网页入口部署适配、monorepo 验证和 GitHub push 已完成；等待用户在 Streamlit Cloud 创建网页应用。"
+  "branch": "harness/fix/audit-findings-remediation",
+  "updated_at": "2026-07-14T13:21:35+08:00",
+  "summary": "已修复审查问题，61 个测试及真实 Chrome 核心交互通过，等待用户验收。"
 }

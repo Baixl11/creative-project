@@ -32,6 +32,9 @@ def main() -> None:
     print(f"Passed: {summary['passed_count']}")
     print(f"Failed: {summary['failed_count']}")
 
+    if summary["failed_count"]:
+        raise SystemExit(1)
+
 
 if __name__ == "__main__":
     main()

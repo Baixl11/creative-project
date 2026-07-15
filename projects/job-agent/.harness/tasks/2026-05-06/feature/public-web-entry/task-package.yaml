@@ -6,7 +6,7 @@ route_reason: "new_request: 将本地 Web UI 升级为可部署的公网网页�
 branch: "harness/feature/public-web-entry"
 created_at: "2026-05-06"
 title: "配置公网网页即点即用入口"
-status: "planned"
+status: "needs_clarification"
 goal: "让 Job Agent 可以通过 Streamlit Community Cloud 从 GitHub monorepo 直接部署为网页应用，用户打开网页即可使用。"
 context: "当前项目已有 Streamlit Web UI，但默认仍需要本地终端启动。GitHub 仓库已经采用 projects/job-agent/ 多项目目录结构。"
 constraints:

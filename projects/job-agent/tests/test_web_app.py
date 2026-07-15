@@ -1,9 +1,13 @@
+import json
 import inspect
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 import web_app
+from app.config import Settings
+from streamlit.testing.v1 import AppTest
 
 
 class FakeUploadedFile:
@@ -49,10 +53,81 @@ class WebAppTests(unittest.TestCase):
         self.assertEqual(sample_path.parent.name, "data")
         self.assertTrue(sample_path.exists())
 
-    def test_output_dir_lives_inside_project_root(self) -> None:
-        self.assertTrue(web_app.OUTPUT_DIR.is_absolute())
-        self.assertEqual(web_app.OUTPUT_DIR.parent.name, "outputs")
-        self.assertEqual(web_app.OUTPUT_DIR.name, "web")
+    def test_web_app_does_not_define_persistent_upload_or_output_directories(self) -> None:
+        self.assertFalse(hasattr(web_app, "OUTPUT_DIR"))
+        self.assertFalse(hasattr(web_app, "UPLOAD_DIR"))
+
+    def test_execute_web_run_cleans_temp_files_and_sanitizes_download_json(self) -> None:
+        settings = Settings(
+            project_name="job-agent",
+            llm_base_url="https://api.openai.com/v1",
+            llm_api_key="",
+            llm_model="gpt-4.1-mini",
+            llm_timeout_seconds=30,
+            use_mock_llm=True,
+        )
+        created_temp_dirs: list[Path] = []
+        base_temporary_directory = tempfile.TemporaryDirectory
+
+        class TrackingTemporaryDirectory(base_temporary_directory):
+            def __enter__(self) -> str:
+                value = super().__enter__()
+                created_temp_dirs.append(Path(value))
+                return value
+
+        jd_file = FakeUploadedFile(
+            "job.txt",
+            b"AI Product Manager\nRequirements\nExperience with AI product planning.\n",
+        )
+        resume_file = FakeUploadedFile(
+            "resume.txt",
+            b"Led AI product planning and launched a workflow product.\n",
+        )
+
+        with patch("web_app.TemporaryDirectory", TrackingTemporaryDirectory):
+            artifacts = web_app._execute_web_run(jd_file, resume_file, settings)
+
+        self.assertTrue(created_temp_dirs)
+        self.assertTrue(all(not path.exists() for path in created_temp_dirs))
+        self.assertIn("# 求职匹配分析报告", artifacts["markdown_text"])
+        self.assertEqual(
+            artifacts["result"].output_path,
+            Path(artifacts["markdown_filename"]),
+        )
+        self.assertEqual(
+            artifacts["result"].json_output_path,
+            Path(artifacts["json_filename"]),
+        )
+
+        payload = json.loads(artifacts["json_text"])
+        self.assertEqual(
+            payload["artifacts"]["markdown_report"],
+            artifacts["markdown_filename"],
+        )
+        self.assertEqual(payload["artifacts"]["json_report"], artifacts["json_filename"])
+        self.assertEqual(
+            payload["workflow_result"]["output_path"],
+            artifacts["markdown_filename"],
+        )
+        self.assertNotIn(str(web_app.PROJECT_ROOT), artifacts["json_text"])
+
+    def test_builtin_result_and_downloads_survive_streamlit_rerun(self) -> None:
+        app = AppTest.from_file("web_app.py", default_timeout=20).run()
+
+        app.button[0].click().run()
+
+        self.assertEqual(list(app.exception), [])
+        self.assertEqual(
+            [(metric.label, metric.value) for metric in app.metric],
+            [("简历改写建议", "3"), ("已匹配要求", "6"), ("待补强要求", "0")],
+        )
+        self.assertEqual(len(app.get("download_button")), 2)
+
+        app.run()
+
+        self.assertEqual(list(app.exception), [])
+        self.assertEqual(len(app.metric), 3)
+        self.assertEqual(len(app.get("download_button")), 2)
 
     def test_supported_format_summary_mentions_core_inputs(self) -> None:
         summary = web_app.SUPPORTED_FORMAT_SUMMARY.lower()
@@ -138,6 +213,17 @@ class WebAppTests(unittest.TestCase):
         long_height = web_app._copyable_text_block_height("长文本" * 120)
 
         self.assertGreater(long_height, short_height)
+
+    def test_copyable_text_block_uses_current_streamlit_html_api(self) -> None:
+        with patch.object(web_app.st, "html") as html_mock, patch.object(
+            web_app,
+            "_supports_javascript_html",
+            return_value=True,
+        ):
+            web_app._render_copyable_text_block("负责产品规划", "rewrite-current")
+
+        html_mock.assert_called_once()
+        self.assertTrue(html_mock.call_args.kwargs["unsafe_allow_javascript"])
 
 
 if __name__ == "__main__":

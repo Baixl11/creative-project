@@ -1,0 +1,4 @@
+interface:
+  display_name: "Spring Boot 工程规范"
+  short_description: "版本感知的 Spring Boot 架构、安全、事务与验证规范"
+  default_prompt: "使用 $springboot-backend-standard 按现有项目版本审查并实现这个 Spring Boot 变更。"

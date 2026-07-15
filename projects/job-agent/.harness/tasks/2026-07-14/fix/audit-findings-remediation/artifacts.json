@@ -1,0 +1,30 @@
+{
+  "schema_version": "1.0",
+  "required": [
+    {"path": "input/requirement.md", "kind": "input", "status": "present"},
+    {"path": "task-package.yaml", "kind": "planning", "status": "present"},
+    {"path": "problem-decomposition.md", "kind": "planning", "status": "present"},
+    {"path": "acceptance-criteria.md", "kind": "planning", "status": "present"},
+    {"path": "exec-plan.md", "kind": "planning", "status": "present"},
+    {"path": "verification-report.md", "kind": "verification", "status": "present"},
+    {"path": "handoff.md", "kind": "delivery", "status": "present"},
+    {"path": "summary.md", "kind": "delivery", "status": "present"}
+  ],
+  "optional": [
+    {"path": "research-notes.md", "kind": "planning", "status": "present"},
+    {"path": "functional-test-plan.md", "kind": "verification", "status": "present"},
+    {"path": "runtime-test-plan.md", "kind": "verification", "status": "present"},
+    {"path": "interaction-test-plan.yaml", "kind": "verification", "status": "present"},
+    {"path": "doc-sync-report.md", "kind": "documentation", "status": "present"},
+    {"path": "trace.md", "kind": "planning", "status": "present"},
+    {"path": "snapshots/upload-generate-report.png", "kind": "interaction", "status": "present"},
+    {"path": "snapshots/upload-generate-report.snapshot.md", "kind": "interaction", "status": "present"},
+    {"path": "snapshots/rerun-retains-result.png", "kind": "interaction", "status": "present"},
+    {"path": "logs/interaction-summary.json", "kind": "interaction", "status": "present"},
+    {"path": "logs/upload-generate-report-console.json", "kind": "interaction", "status": "present"},
+    {"path": "logs/upload-generate-report-network.json", "kind": "interaction", "status": "present"},
+    {"path": "../../../../../web_app.py", "kind": "source", "status": "present"},
+    {"path": "../../../../../tests/test_web_app.py", "kind": "test", "status": "present"},
+    {"path": "../../../../../docs/portfolio/job_agent_case_study.pdf", "kind": "documentation", "status": "present"}
+  ]
+}

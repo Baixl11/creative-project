@@ -5,6 +5,7 @@ import { chromium } from "playwright";
 
 import { config } from "./config.js";
 import { getAccountCredentials } from "./credentials.js";
+import { publicCollectionErrorMessage } from "./errorSanitizer.js";
 
 const creatorHomeUrl = "https://creator.xiaohongshu.com";
 const creatorLoginUrl = `${creatorHomeUrl}/login`;
@@ -14,8 +15,10 @@ const manualLoginTimeoutMs = 10 * 60 * 1000;
 const loginJobs = new Map();
 
 function ensureAuthDirs() {
-  fs.mkdirSync(sessionStateDir, { recursive: true });
-  fs.mkdirSync(browserProfileDir, { recursive: true });
+  fs.mkdirSync(sessionStateDir, { recursive: true, mode: 0o700 });
+  fs.mkdirSync(browserProfileDir, { recursive: true, mode: 0o700 });
+  fs.chmodSync(sessionStateDir, 0o700);
+  fs.chmodSync(browserProfileDir, 0o700);
 }
 
 function safeCredentialKey(credentialKey) {
@@ -99,7 +102,9 @@ async function runManualLoginJob(job, account) {
     }
 
     await waitForManualLogin(page);
-    await context.storageState({ path: storageStatePath(account) });
+    const statePath = storageStatePath(account);
+    await context.storageState({ path: statePath });
+    fs.chmodSync(statePath, 0o600);
 
     job.status = "completed";
     job.completedAt = new Date().toISOString();
@@ -107,7 +112,7 @@ async function runManualLoginJob(job, account) {
   } catch (error) {
     job.status = "error";
     job.completedAt = new Date().toISOString();
-    job.message = error.message || "登录授权失败。";
+    job.message = publicCollectionErrorMessage(error);
   } finally {
     await context?.close().catch(() => {});
   }

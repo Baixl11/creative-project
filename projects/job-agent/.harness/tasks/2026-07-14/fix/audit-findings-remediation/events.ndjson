@@ -1,0 +1,14 @@
+{"time":"2026-07-14T11:33:20+08:00","stage":"planner","actor":"codex","type":"started","message":"开始修复项目审查发现的问题","artifacts":[]}
+{"time":"2026-07-14T11:33:20+08:00","stage":"planner","actor":"codex","type":"research_completed","message":"完成当前项目证据复核与修复方案选择","artifacts":["research-notes.md","problem-decomposition.md"]}
+{"time":"2026-07-14T11:33:20+08:00","stage":"planner","actor":"codex","type":"artifact_written","message":"完成验收标准与分层验证计划","artifacts":["acceptance-criteria.md","functional-test-plan.md","runtime-test-plan.md","interaction-test-plan.yaml","exec-plan.md"]}
+{"time":"2026-07-14T11:36:36+08:00","stage":"planner","actor":"codex","type":"stage_completed","message":"规划阶段完成并创建独立任务分支","artifacts":["task-package.yaml","state.json"]}
+{"time":"2026-07-14T11:36:36+08:00","stage":"coder","actor":"codex","type":"started","message":"开始核心业务正确性修复","artifacts":[]}
+{"time":"2026-07-14T11:50:00+08:00","stage":"coder","actor":"codex","type":"commit_created","message":"核心正确性修复已提交为 3987850","artifacts":["../../../../../app","../../../../../tests"]}
+{"time":"2026-07-14T12:06:07+08:00","stage":"coder","actor":"codex","type":"stage_completed","message":"完成 Web 临时文件清理、路径脱敏和会话重跑修复","artifacts":["../../../../../web_app.py","../../../../../tests/test_web_app.py"]}
+{"time":"2026-07-14T12:06:07+08:00","stage":"verifier","actor":"codex","type":"validation_passed","message":"完整单元测试通过，共 60 项","artifacts":["validations.json"]}
+{"time":"2026-07-14T12:09:33+08:00","stage":"verifier","actor":"codex","type":"runtime_validation_passed","message":"Streamlit 在 8501 端口启动并通过 healthcheck","artifacts":["validations.json"]}
+{"time":"2026-07-14T12:51:31+08:00","stage":"verifier","actor":"codex","type":"interaction_validation_passed","message":"真实 Chrome 上传、生成、下载和 rerun 流程通过，console 和 network 错误为 0","artifacts":["snapshots/upload-generate-report.png","snapshots/rerun-retains-result.png","logs/interaction-summary.json"]}
+{"time":"2026-07-14T13:21:35+08:00","stage":"doc_gardener","actor":"codex","type":"stage_completed","message":"完成历史 Harness 纠错、长期文档同步和作品集 PDF 更新","artifacts":["doc-sync-report.md","../../../../../PROJECT_STATUS.md","../../../../../docs/portfolio/job_agent_case_study.pdf"]}
+{"time":"2026-07-14T13:21:35+08:00","stage":"human_review","actor":"codex","type":"status_changed","message":"任务进入 ready_for_human_review","artifacts":["state.json","summary.md","handoff.md","verification-report.md"]}
+{"time":"2026-07-14T13:21:36+08:00","stage":"verifier","actor":"codex","type":"validation_passed","message":"最终全量单元测试通过，共 61 项","artifacts":["validations.json","verification-report.md"]}
+{"time":"2026-07-14T13:32:32+08:00","stage":"doc_gardener","actor":"codex","type":"commit_created","message":"修复、Web 上传生命周期、验证与文档已分三笔提交完成","artifacts":["3987850","af867e9","afdc819","handoff.md"]}

@@ -1,0 +1,4 @@
+interface:
+  display_name: "FastAPI 工程规范"
+  short_description: "版本感知的 FastAPI 架构、安全、数据与验证规范"
+  default_prompt: "使用 $fastapi-backend-standard 按现有项目版本审查并实现这个 FastAPI 变更。"

@@ -1,72 +1,60 @@
 {
   "schema_version": "1.0",
-  "status": "passed_and_pushed",
   "commands": [
-    {
-      "command": ".venv/bin/python -m unittest discover -s tests",
-      "status": "passed",
-      "summary": "43 tests passed in source project"
-    },
-    {
-      "command": ".venv/bin/python -m py_compile web_app.py",
-      "status": "passed",
-      "summary": "Streamlit entry compiled"
-    },
-    {
-      "command": ".venv/bin/python .agents/skills/harness-project-bootstrap/scripts/validate_plan.py --plan .harness/bootstrap-plan.yaml --target .",
-      "status": "passed",
-      "summary": "Bootstrap plan valid; 36 templates mapped"
-    },
-    {
-      "command": ".venv/bin/python -m app.evaluate --manifest data/eval_cases/manifest.json --output-dir outputs/evaluations",
-      "status": "passed",
-      "summary": "3 evaluation cases passed"
-    },
-    {
-      "command": ".venv/bin/python -m app.main --jd data/demo_jd_cn.txt --resume data/demo_resume_cn.txt --output outputs/demo_cn_report.md --json-output outputs/demo_cn_report.json",
-      "status": "passed",
-      "summary": "Public Chinese demo produced score 95 in mock mode"
-    },
-    {
-      "command": ".venv/bin/python -m app.main --jd data/my_jd.txt --resume data/my_resume.pdf --output outputs/my_report.md --json-output outputs/my_report.json",
-      "status": "passed",
-      "summary": "Private local sample produced score 95 in mock mode"
-    }
+    {"name": "unit_tests", "command": ".venv/bin/python -m unittest discover -s tests", "status": "passed", "summary": "43 tests passed at task time"},
+    {"name": "web_compile", "command": ".venv/bin/python -m py_compile web_app.py", "status": "passed", "summary": "Streamlit entry compiled"},
+    {"name": "bootstrap_plan", "command": ".venv/bin/python .agents/skills/harness-project-bootstrap/scripts/validate_plan.py --plan .harness/bootstrap-plan.yaml --target .", "status": "passed", "summary": "36 templates mapped"},
+    {"name": "evaluation", "command": ".venv/bin/python -m app.evaluate --manifest data/eval_cases/manifest.json --output-dir outputs/evaluations", "status": "passed", "summary": "3 cases passed at task time"},
+    {"name": "public_demo", "command": ".venv/bin/python -m app.main --jd data/demo_jd_cn.txt --resume data/demo_resume_cn.txt --output outputs/demo_cn_report.md --json-output outputs/demo_cn_report.json", "status": "passed", "summary": "Public demo completed in mock mode at task time"}
   ],
   "functional_checks": [
     {
-      "name": "project_root_paths",
+      "name": "monorepo path and public demo",
+      "kind": "unit_and_smoke",
+      "command": ".venv/bin/python -m unittest discover -s tests",
       "status": "passed",
-      "summary": "web_app imports from a monorepo root and resolves PROJECT_ROOT to projects/job-agent"
-    },
+      "risk": "high",
+      "covers": ["PROJECT_ROOT", "public demo fallback", "monorepo import"],
+      "summary": "Low-level path and demo behavior passed at task time",
+      "failure_reason": null
+    }
+  ],
+  "manual_checks": [
     {
-      "name": "public_demo_fallback",
-      "status": "passed",
-      "summary": "demo_jd_cn.txt exists in monorepo stage and is reachable through _project_path"
+      "name": "Streamlit Cloud app creation",
+      "status": "needs_human_review",
+      "summary": "User account authorization, app creation and final public URL were not completed in this task"
     }
   ],
   "runtime_checks": [
     {
-      "name": "monorepo_module_import",
+      "name": "Streamlit server start and health",
+      "tool": "streamlit_and_curl",
+      "entry": "http://localhost:8511",
       "status": "passed",
-      "summary": "Loaded projects/job-agent/web_app.py from monorepo root and confirmed data/output paths"
-    },
-    {
-      "name": "streamlit_server_start",
-      "status": "passed",
-      "summary": "Streamlit started from monorepo root with projects/job-agent/web_app.py on port 8511"
+      "steps": ["start Streamlit", "request HTTP endpoint"],
+      "expected": ["server starts", "HTTP 200"],
+      "observed": ["server started", "curl returned HTTP/1.1 200 OK"],
+      "failure_reason": null,
+      "summary": "Runtime reachability passed; this does not prove page interaction"
     }
   ],
   "interaction_checks": [
     {
-      "name": "http_smoke",
-      "status": "passed",
-      "summary": "curl -I http://localhost:8511 returned HTTP/1.1 200 OK"
+      "name": "upload and generate report",
+      "tool": "browser_automation_unavailable_at_task_time",
+      "entry": "http://localhost:8511",
+      "status": "needs_human_review",
+      "steps": ["open page", "upload inputs", "generate report", "inspect console/network", "capture screenshot"],
+      "expected": ["results render", "no blocking console/network errors"],
+      "observed": ["Only HTTP healthcheck was executed"],
+      "screenshot": null,
+      "snapshot": null,
+      "console_errors": null,
+      "network_failures": null,
+      "failure_reason": "No real browser interaction or required evidence was captured in the original task",
+      "summary": "The earlier HTTP smoke was reclassified from interaction passed to needs human review"
     }
   ],
-  "residual_risks": [
-    "GitHub commit author currently uses the local machine identity Cyan <cyan@CyandeMacBook-Air.local>; future commits can be configured with a public portfolio email if desired.",
-    "Final Streamlit Cloud URL requires user account authorization and app creation.",
-    "Cloud OCR package installation and real screenshot OCR quality require post-deploy confirmation."
-  ]
+  "visual_checks": []
 }

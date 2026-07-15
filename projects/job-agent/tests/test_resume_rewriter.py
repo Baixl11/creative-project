@@ -29,9 +29,9 @@ class ResumeRewriterTests(unittest.TestCase):
         self.assertEqual(suggestions[0].suggestion_type, "strengthen")
         self.assertEqual(
             suggestions[0].rewrite_bullet,
-            "围绕“负责智能化产品的规划与设计”，主导 AI 产品 0-1 规划，完成需求分析、原型设计和上线推进。",
+            "主导 AI 产品 0-1 规划，完成需求分析、原型设计和上线推进。",
         )
-        self.assertNotEqual(suggestions[0].rewrite_bullet, suggestions[0].current_evidence)
+        self.assertEqual(suggestions[0].rewrite_bullet, suggestions[0].current_evidence)
         self.assertEqual(suggestions[0].target_requirement, "负责智能化产品的规划与设计")
 
     def test_rewriter_builds_gap_template_for_missing_requirement(self) -> None:
@@ -84,11 +84,11 @@ class ResumeRewriterTests(unittest.TestCase):
 
         suggestion = rewriter.build_suggestions(report)[0]
 
-        self.assertNotEqual(suggestion.rewrite_bullet, suggestion.current_evidence)
         self.assertEqual(
             suggestion.rewrite_bullet,
-            "主导 AI 产品能力落地，围绕视频取证、APP 分析场景，设计“专精小模型+通用大模型”双引擎方案，推动 AI 覆盖率超 80%、关键流程效率提升 40%以上。",
+            "擅长将 AI 技术转化为可落地的产品解决方案，主导设计“专精小模型+通用大模型”双引擎架构，在视频取证、APP 分析等场景中实现 AI 覆盖率超 80%、关键流程效率提升 40%以上。",
         )
+        self.assertNotIn("主导 AI 产品能力落地", suggestion.rewrite_bullet)
 
     def test_rewriter_restructures_product_planning_evidence(self) -> None:
         rewriter = ResumeRewriter()
@@ -115,9 +115,71 @@ class ResumeRewriterTests(unittest.TestCase):
 
         suggestion = rewriter.build_suggestions(report)[0]
 
-        self.assertNotEqual(suggestion.rewrite_bullet, suggestion.current_evidence)
-        self.assertIn("围绕执法/司法机构在视频取证中面临的恢复难", suggestion.rewrite_bullet)
-        self.assertIn("负责产品 0-1 规划与定义", suggestion.rewrite_bullet)
+        self.assertEqual(suggestion.rewrite_bullet, suggestion.current_evidence)
+        self.assertIn("针对执法/司法机构在视频取证中面临的恢复难", suggestion.rewrite_bullet)
+        self.assertIn("负责产品 0-1 全流程规划与定义", suggestion.rewrite_bullet)
+
+    def test_rewriter_does_not_invent_ownership_domain_or_metrics(self) -> None:
+        rewriter = ResumeRewriter()
+        examples = [
+            (
+                "洞察 G 端市场趋势并制定智能化产品策略",
+                "完成竞品分析，提出定价建议。",
+                ("G 端", "智能化产品定位", "主导"),
+            ),
+            (
+                "主导 AI 产品能力落地",
+                "参与 AI 项目测试，实现准确率提升 5%。",
+                ("主导", "0-1"),
+            ),
+            (
+                "负责产品 0-1 规划与定义",
+                "参与产品设计，完成原型评审。",
+                ("负责产品 0-1", "主导"),
+            ),
+        ]
+
+        for requirement, source, forbidden in examples:
+            with self.subTest(source=source):
+                report = MatchReport(
+                    score=80,
+                    matched_requirements=[requirement],
+                    missing_requirements=[],
+                    rationale=[],
+                    requirement_evidence=[
+                        RequirementEvidence(
+                            requirement=requirement,
+                            status="matched",
+                            best_resume_highlight=source,
+                            match_strength=0.8,
+                            reason="matched",
+                        )
+                    ],
+                )
+
+                suggestion = rewriter.build_suggestions(report)[0]
+
+                for phrase in forbidden:
+                    self.assertNotIn(phrase, suggestion.rewrite_bullet)
+
+        participant_report = MatchReport(
+            score=80,
+            matched_requirements=["AI 项目经验"],
+            missing_requirements=[],
+            rationale=[],
+            requirement_evidence=[
+                RequirementEvidence(
+                    requirement="AI 项目经验",
+                    status="matched",
+                    best_resume_highlight="参与 AI 项目测试，实现准确率提升 5%。",
+                    match_strength=0.8,
+                    reason="matched",
+                )
+            ],
+        )
+        participant_suggestion = rewriter.build_suggestions(participant_report)[0]
+        self.assertIn("参与", participant_suggestion.rewrite_bullet)
+        self.assertIn("提升 5%", participant_suggestion.rewrite_bullet)
 
 
 if __name__ == "__main__":

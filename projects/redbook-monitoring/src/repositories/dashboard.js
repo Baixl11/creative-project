@@ -1,3 +1,5 @@
+import { sanitizeCollectionLogMessage } from "../errorSanitizer.js";
+
 const datePattern = /^\d{4}-\d{2}-\d{2}$/;
 
 function normalizeDate(value) {
@@ -556,7 +558,7 @@ export function createDashboardRepository(db) {
       const result = db.prepare(`
         INSERT INTO collection_logs (account_id, level, event_type, message)
         VALUES (?, ?, ?, ?)
-      `).run(accountId, level, eventType, message);
+      `).run(accountId, level, eventType, sanitizeCollectionLogMessage(message));
 
       return db.prepare(`
         SELECT

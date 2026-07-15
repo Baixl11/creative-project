@@ -1,0 +1,4 @@
+interface:
+  display_name: "Express 原生 Web 工程规范"
+  short_description: "约束 Express 与原生 Web 项目的数据、安全、前端和测试质量"
+  default_prompt: "Use $express-vanilla-web-standard to implement or review this Express and vanilla Web project safely."

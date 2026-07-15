@@ -1,9 +1,13 @@
 from __future__ import annotations
 
 import html as html_lib
+import inspect
+import json
 import sys
 from datetime import datetime
 from pathlib import Path
+from tempfile import TemporaryDirectory
+from typing import TypedDict, cast
 from uuid import uuid4
 
 import streamlit as st
@@ -19,8 +23,7 @@ from app.errors import InputValidationError
 from app.models import WorkflowResult
 
 
-OUTPUT_DIR = PROJECT_ROOT / "outputs" / "web"
-UPLOAD_DIR = OUTPUT_DIR / "uploads"
+LAST_RESULT_STATE_KEY = "job_agent_last_result"
 SUPPORTED_TYPES = [
     "txt",
     "md",
@@ -50,6 +53,14 @@ DISPLAY_TRANSLATIONS = {
     "Explored AI note summarization features and coordinated early user testing with support and research teams.": "探索 AI 笔记总结功能，并协调客服和用户研究团队完成早期用户测试。",
     "Alex Chen Product Manager Led roadmap planning for a mobile productivity product used by 200k monthly active users": "主导移动端效率产品路线图规划，产品月活用户约 20 万",
 }
+
+
+class WebRunArtifacts(TypedDict):
+    result: WorkflowResult
+    markdown_text: str
+    json_text: str
+    markdown_filename: str
+    json_filename: str
 
 
 def main() -> None:
@@ -118,15 +129,18 @@ def main() -> None:
         jd_file is not None and resume_file is not None
     )
     if st.button("生成匹配报告", type="primary", disabled=not can_run):
-        if jd_file is not None and resume_file is not None:
-            run_id = _new_run_id()
-            upload_dir = UPLOAD_DIR / run_id
-            jd_path = _save_uploaded_file(jd_file, upload_dir, "jd")
-            resume_path = _save_uploaded_file(resume_file, upload_dir, "resume")
+        st.session_state.pop(LAST_RESULT_STATE_KEY, None)
+        jd_source = jd_file if jd_file is not None else jd_path
+        resume_source = resume_file if resume_file is not None else resume_path
+        assert jd_source is not None
+        assert resume_source is not None
+        artifacts = _run_agent(jd_source, resume_source)
+        if artifacts is not None:
+            st.session_state[LAST_RESULT_STATE_KEY] = artifacts
 
-        assert jd_path is not None
-        assert resume_path is not None
-        _run_agent(jd_path, resume_path)
+    stored_artifacts = st.session_state.get(LAST_RESULT_STATE_KEY)
+    if _is_web_run_artifacts(stored_artifacts):
+        _render_result(cast(WebRunArtifacts, stored_artifacts))
 
 
 def _render_value_cards() -> None:
@@ -240,30 +254,97 @@ def _render_upload_inputs() -> tuple[object | None, object | None]:
     return jd_file, resume_file
 
 
-def _run_agent(jd_path: Path, resume_path: Path) -> None:
-    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    run_id = _new_run_id()
-    report_path = OUTPUT_DIR / f"report_{run_id}.md"
-    json_path = OUTPUT_DIR / f"report_{run_id}.json"
-
+def _run_agent(jd_source: Path | object, resume_source: Path | object) -> WebRunArtifacts | None:
     with st.spinner("Agent 正在读取文件、分析匹配度并生成报告..."):
         try:
             settings = Settings.load(_project_path(".env"))
-            result = JobApplicationAgent(settings).run(
-                jd_path,
-                resume_path,
-                report_path,
-                json_path,
-            )
+            artifacts = _execute_web_run(jd_source, resume_source, settings)
         except InputValidationError as exc:
             st.error(f"输入文件有问题：{exc}")
-            return
+            return None
 
     st.success("报告生成完成")
-    _render_result(result, report_path, json_path)
+    return artifacts
 
 
-def _render_result(result: WorkflowResult, report_path: Path, json_path: Path) -> None:
+def _execute_web_run(
+    jd_source: Path | object,
+    resume_source: Path | object,
+    settings: Settings,
+) -> WebRunArtifacts:
+    run_id = _new_run_id()
+    markdown_filename = f"report_{run_id}.md"
+    json_filename = f"report_{run_id}.json"
+
+    with TemporaryDirectory(prefix="job-agent-web-") as temp_dir:
+        temp_root = Path(temp_dir)
+        upload_dir = temp_root / "uploads"
+        jd_path = _materialize_input(jd_source, upload_dir, "jd")
+        resume_path = _materialize_input(resume_source, upload_dir, "resume")
+        report_path = temp_root / markdown_filename
+        json_path = temp_root / json_filename
+        result = JobApplicationAgent(settings).run(
+            jd_path,
+            resume_path,
+            report_path,
+            json_path,
+        )
+        markdown_text = report_path.read_text(encoding="utf-8")
+        json_text = _sanitize_json_artifact(
+            json_path.read_text(encoding="utf-8"),
+            markdown_filename,
+            json_filename,
+        )
+
+    result.output_path = Path(markdown_filename)
+    result.json_output_path = Path(json_filename)
+    return {
+        "result": result,
+        "markdown_text": markdown_text,
+        "json_text": json_text,
+        "markdown_filename": markdown_filename,
+        "json_filename": json_filename,
+    }
+
+
+def _is_web_run_artifacts(value: object) -> bool:
+    required_keys = {
+        "result",
+        "markdown_text",
+        "json_text",
+        "markdown_filename",
+        "json_filename",
+    }
+    return isinstance(value, dict) and required_keys <= value.keys()
+
+
+def _materialize_input(source: Path | object, upload_dir: Path, prefix: str) -> Path:
+    if isinstance(source, Path):
+        return source
+    return _save_uploaded_file(source, upload_dir, prefix)
+
+
+def _sanitize_json_artifact(
+    raw_json: str,
+    markdown_filename: str,
+    json_filename: str,
+) -> str:
+    payload = json.loads(raw_json)
+    artifacts = payload.get("artifacts")
+    if isinstance(artifacts, dict):
+        artifacts["markdown_report"] = markdown_filename
+        artifacts["json_report"] = json_filename
+
+    workflow_result = payload.get("workflow_result")
+    if isinstance(workflow_result, dict):
+        workflow_result["output_path"] = markdown_filename
+        workflow_result["json_output_path"] = json_filename
+
+    return json.dumps(payload, ensure_ascii=False, indent=2) + "\n"
+
+
+def _render_result(artifacts: WebRunArtifacts) -> None:
+    result = artifacts["result"]
     score = result.match_report.score
     matched_count = len(result.match_report.matched_requirements)
     missing_count = len(result.match_report.missing_requirements)
@@ -279,8 +360,8 @@ def _render_result(result: WorkflowResult, report_path: Path, json_path: Path) -
 
     with st.expander("运行细节"):
         st.write(f"运行模式：`{result.run_mode}`")
-        st.write(f"Markdown 报告：`{report_path}`")
-        st.write(f"JSON 结果：`{json_path}`")
+        st.write(f"Markdown 报告：`{artifacts['markdown_filename']}`")
+        st.write(f"JSON 结果：`{artifacts['json_filename']}`")
 
     tab_summary, tab_evidence, tab_rewrite, tab_interview, tab_artifacts = st.tabs(
         ["结论", "逐条证据", "简历改写", "面试准备", "产物文件"]
@@ -333,18 +414,18 @@ def _render_result(result: WorkflowResult, report_path: Path, json_path: Path) -
                 st.write(_to_chinese_display(question.why_it_matters))
 
     with tab_artifacts:
-        st.write(f"Markdown 报告：`{report_path}`")
-        st.write(f"JSON 结果：`{json_path}`")
+        st.write(f"Markdown 报告：`{artifacts['markdown_filename']}`")
+        st.write(f"JSON 结果：`{artifacts['json_filename']}`")
         st.download_button(
             "下载 Markdown 报告",
-            data=report_path.read_text(encoding="utf-8"),
-            file_name=report_path.name,
+            data=artifacts["markdown_text"],
+            file_name=artifacts["markdown_filename"],
             mime="text/markdown",
         )
         st.download_button(
             "下载 JSON 结果",
-            data=json_path.read_text(encoding="utf-8"),
-            file_name=json_path.name,
+            data=artifacts["json_text"],
+            file_name=artifacts["json_filename"],
             mime="application/json",
         )
 
@@ -393,11 +474,20 @@ def _build_upload_field_label(title: str, hint: str) -> str:
 
 
 def _render_copyable_text_block(text: str, key: str) -> None:
+    block_html = _build_copyable_text_block_html(text, key)
+    if _supports_javascript_html():
+        st.html(block_html, unsafe_allow_javascript=True)
+        return
+
     components_html(
-        _build_copyable_text_block_html(text, key),
+        block_html,
         height=_copyable_text_block_height(text),
         scrolling=False,
     )
+
+
+def _supports_javascript_html() -> bool:
+    return "unsafe_allow_javascript" in inspect.signature(st.html).parameters
 
 
 def _build_copyable_text_block_html(text: str, key: str) -> str:
@@ -462,16 +552,9 @@ def _build_copyable_text_block_html(text: str, key: str) -> str:
     }})();
     </script>
     <style>
-      :root {{
-        color-scheme: light;
-      }}
-      body {{
-        margin: 0;
-        background: transparent;
+      .copyable-text-block {{
         font-family: "Songti SC", "Noto Serif CJK SC", Georgia, serif;
         color: #17211b;
-      }}
-      .copyable-text-block {{
         width: 100%;
         box-sizing: border-box;
       }}

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from app.errors import LLMServiceError
 from app.models import WorkflowResult
 from app.services.llm_service import LLMService
 from app.utils.file_io import load_prompt
@@ -10,7 +11,8 @@ class ReportGenerator:
         self.llm_service = llm_service
 
     def generate(self, result: WorkflowResult) -> str:
-        executive_summary = self._build_executive_summary(result)
+        executive_summary, run_mode = self._build_executive_summary(result)
+        result.run_mode = run_mode
         lines = [
             f"# 求职匹配分析报告",
             "",
@@ -43,10 +45,10 @@ class ReportGenerator:
         ]
         return "\n".join(lines).strip() + "\n"
 
-    def _build_executive_summary(self, result: WorkflowResult) -> str:
+    def _build_executive_summary(self, result: WorkflowResult) -> tuple[str, str]:
         fallback = self._fallback_summary(result)
         if not self.llm_service.enabled:
-            return fallback
+            return fallback, "mock"
 
         try:
             prompt = load_prompt("report.txt")
@@ -66,12 +68,13 @@ class ReportGenerator:
                     "\n".join(f"- {item}" for item in result.resume_highlights),
                 )
             )
-            return self.llm_service.complete(
+            summary = self.llm_service.complete(
                 system_prompt="你是一位直白、务实的中文求职顾问，建议要具体、口语化。",
                 user_prompt=user_prompt,
             )
-        except RuntimeError:
-            return fallback
+            return summary, f"live-api:{self.llm_service.settings.llm_model}"
+        except LLMServiceError:
+            return fallback, "mock-fallback"
 
     def _fallback_summary(self, result: WorkflowResult) -> str:
         matched_count = len(result.match_report.matched_requirements)

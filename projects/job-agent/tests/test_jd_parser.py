@@ -48,6 +48,35 @@ class JDParserTests(unittest.TestCase):
             ],
         )
 
+    def test_parser_keeps_ignored_section_active_until_next_known_section(self) -> None:
+        parser = JDParser()
+
+        _, requirements = parser.parse(
+            """
+AI 产品经理
+员工福利：
+提供产品培训、用户活动与技术分享
+五险一金与年度体检
+任职要求：
+具备 AI 产品规划经验
+"""
+        )
+
+        self.assertEqual(requirements, ["具备 AI 产品规划经验"])
+
+    def test_parser_includes_preferred_qualifications(self) -> None:
+        parser = JDParser()
+
+        _, requirements = parser.parse(
+            """
+Product Manager
+Preferred Qualifications
+Experience shipping AI workflow products.
+"""
+        )
+
+        self.assertEqual(requirements, ["Experience shipping AI workflow products."])
+
 
 if __name__ == "__main__":
     unittest.main()

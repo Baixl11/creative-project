@@ -80,136 +80,25 @@ class ResumeRewriter:
         if not evidence:
             return f"围绕“{requirement}”补充一条更具体的项目经历。"
 
-        if self._looks_like_market_strategy(requirement):
-            return self._rewrite_market_strategy(evidence)
-
-        if self._looks_like_product_planning(requirement, evidence):
-            return self._rewrite_product_planning(requirement, evidence)
-
-        if self._looks_like_ai_delivery(requirement, evidence):
-            return self._rewrite_ai_delivery(evidence)
-
-        return self._rewrite_generic(requirement, evidence)
-
-    def _looks_like_ai_delivery(self, requirement: str, evidence: str) -> bool:
-        text = requirement + evidence
-        return "AI" in text or "智能" in text or "大模型" in text
-
-    def _looks_like_market_strategy(self, requirement: str) -> bool:
-        return any(keyword in requirement for keyword in ("市场趋势", "市场洞察", "产品定位", "策略"))
-
-    def _looks_like_product_planning(self, requirement: str, evidence: str) -> bool:
-        text = requirement + evidence
-        return any(keyword in text for keyword in ("产品规划", "产品设计", "0-1", "0 到 1", "产品定义"))
-
-    def _rewrite_ai_delivery(self, evidence: str) -> str:
-        scenes = self._extract_between(evidence, "在", "等场景中")
-        architecture = self._extract_between(evidence, "主导设计“", "”")
-        result = self._extract_after(evidence, "实现")
-
-        parts = ["主导 AI 产品能力落地"]
-        if scenes:
-            parts.append(f"围绕{scenes}场景")
-        if architecture:
-            parts.append(f"设计“{architecture}”双引擎方案")
-        if result:
-            connector = "推动 " if self._starts_with_ascii(result) else "推动"
-            parts.append(f"{connector}{result}")
-
-        if len(parts) == 1:
-            return self._rewrite_generic("AI 产品能力落地", evidence)
-
-        return "，".join(parts) + "。"
-
-    def _rewrite_market_strategy(self, evidence: str) -> str:
-        scenario = self._extract_between(evidence, "针对", "，完成")
-        positioning = self._extract_phrase_starting(evidence, "完成")
-        framework = self._extract_phrase_starting(evidence, "提出")
-
-        parts = []
-        if scenario:
-            parts.append(f"基于{scenario}")
-        if positioning:
-            parts.append(positioning)
-        if framework:
-            parts.append(framework)
-
-        if not parts:
-            return self._rewrite_generic("市场趋势与产品策略", evidence)
-
-        parts.append("支撑 G 端智能化产品定位与创新策略")
-        return "，".join(parts) + "。"
-
-    def _rewrite_product_planning(self, requirement: str, evidence: str) -> str:
-        scenario = self._extract_between(evidence, "针对", "，完成")
-        positioning = self._extract_phrase_starting(evidence, "完成")
-        framework = self._extract_phrase_starting(evidence, "提出")
-
-        if not scenario and not framework:
-            return self._rewrite_generic(requirement, evidence)
-
-        parts = []
-        if scenario:
-            parts.append(f"围绕{scenario}")
-        parts.append("负责产品 0-1 规划与定义")
-        if positioning:
-            parts.append(positioning)
-        if framework:
-            parts.append(framework)
-
-        return self._dedupe_parts(parts)
-
-    def _rewrite_generic(self, requirement: str, evidence: str) -> str:
-        evidence_body = self._remove_leading_label(evidence)
-        if evidence_body == evidence:
-            return f"围绕“{requirement}”，{evidence_body}"
-        return evidence_body
+        return self._remove_leading_label(evidence)
 
     def _remove_leading_label(self, text: str) -> str:
         if "：" not in text:
             return text
 
         label, body = text.split("：", 1)
-        action_labels = ("负责", "主导", "推动", "完成", "设计", "输出", "提出", "实现")
+        action_labels = (
+            "负责",
+            "主导",
+            "参与",
+            "协助",
+            "推动",
+            "完成",
+            "设计",
+            "输出",
+            "提出",
+            "实现",
+        )
         if label.startswith(action_labels):
             return text
         return body
-
-    def _extract_between(self, text: str, start: str, end: str) -> str:
-        pattern = re.escape(start) + r"(.+?)" + re.escape(end)
-        match = re.search(pattern, text)
-        if not match:
-            return ""
-        return self._clean_sentence(match.group(1))
-
-    def _extract_after(self, text: str, marker: str) -> str:
-        if marker not in text:
-            return ""
-        value = text.split(marker, 1)[1]
-        value = re.split(r"[。；;]", value, maxsplit=1)[0]
-        return self._clean_sentence(value)
-
-    def _extract_phrase_starting(self, text: str, marker: str) -> str:
-        if marker not in text:
-            return ""
-        value = marker + text.split(marker, 1)[1]
-        value = re.split(r"[。；;]", value, maxsplit=1)[0]
-        return self._clean_sentence(value)
-
-    def _extract_sentence_containing(self, text: str, keyword: str) -> str:
-        sentences = re.split(r"(?<=[。；;])", text)
-        for sentence in sentences:
-            if keyword in sentence:
-                return self._clean_sentence(sentence)
-        return ""
-
-    def _dedupe_parts(self, parts: list[str]) -> str:
-        unique_parts: list[str] = []
-        for part in parts:
-            cleaned = self._clean_sentence(part).rstrip("。")
-            if cleaned and cleaned not in unique_parts:
-                unique_parts.append(cleaned)
-        return "，".join(unique_parts) + "。"
-
-    def _starts_with_ascii(self, text: str) -> bool:
-        return bool(text) and text[0].isascii()

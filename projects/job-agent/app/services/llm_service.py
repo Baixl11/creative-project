@@ -5,6 +5,7 @@ import urllib.error
 import urllib.request
 
 from app.config import Settings
+from app.errors import LLMServiceError
 
 
 class LLMService:
@@ -17,7 +18,7 @@ class LLMService:
 
     def complete(self, system_prompt: str, user_prompt: str) -> str:
         if not self.enabled:
-            raise RuntimeError("LLM is not configured. Use mock mode or add an API key.")
+            raise LLMServiceError("LLM is not configured. Use mock mode or add an API key.")
 
         url = f"{self.settings.llm_base_url.rstrip('/')}/chat/completions"
         payload = {
@@ -42,19 +43,36 @@ class LLMService:
             ) as response:
                 response_body = response.read().decode("utf-8")
         except urllib.error.HTTPError as exc:
-            detail = exc.read().decode("utf-8", errors="replace")
-            raise RuntimeError(f"LLM request failed with HTTP {exc.code}: {detail}") from exc
+            raise LLMServiceError(f"LLM request failed with HTTP {exc.code}.") from exc
         except urllib.error.URLError as exc:
-            raise RuntimeError(f"LLM request failed: {exc.reason}") from exc
+            raise LLMServiceError(f"LLM request failed: {exc.reason}") from exc
+        except UnicodeDecodeError as exc:
+            raise LLMServiceError("LLM response was not valid UTF-8.") from exc
+        except (TimeoutError, OSError, ValueError) as exc:
+            raise LLMServiceError("LLM request could not be completed.") from exc
 
-        parsed = json.loads(response_body)
+        try:
+            parsed = json.loads(response_body)
+        except json.JSONDecodeError as exc:
+            raise LLMServiceError("LLM response was not valid JSON.") from exc
+
+        if not isinstance(parsed, dict):
+            raise LLMServiceError("LLM response was not a JSON object.")
+
         choices = parsed.get("choices", [])
-        if not choices:
-            raise RuntimeError("LLM response did not include any choices.")
+        if not isinstance(choices, list) or not choices or not isinstance(choices[0], dict):
+            raise LLMServiceError("LLM response did not include any choices.")
 
         message = choices[0].get("message", {})
-        content = message.get("content", "").strip()
+        if not isinstance(message, dict):
+            raise LLMServiceError("LLM response message was invalid.")
+
+        raw_content = message.get("content", "")
+        if not isinstance(raw_content, str):
+            raise LLMServiceError("LLM response content was invalid.")
+
+        content = raw_content.strip()
         if not content:
-            raise RuntimeError("LLM response content was empty.")
+            raise LLMServiceError("LLM response content was empty.")
 
         return content

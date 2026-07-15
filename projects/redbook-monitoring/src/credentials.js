@@ -2,6 +2,20 @@ import fs from "node:fs";
 
 import { config } from "./config.js";
 
+function writeEnvAtomically(content) {
+  const temporaryPath = `${config.envPath}.${process.pid}.${Date.now()}.tmp`;
+
+  try {
+    fs.writeFileSync(temporaryPath, content, { mode: 0o600 });
+    fs.renameSync(temporaryPath, config.envPath);
+    fs.chmodSync(config.envPath, 0o600);
+  } finally {
+    if (fs.existsSync(temporaryPath)) {
+      fs.unlinkSync(temporaryPath);
+    }
+  }
+}
+
 function parseEnvValue(value) {
   const trimmed = value.trim();
   if (
@@ -84,9 +98,7 @@ export function saveAccountCredentials(account, credentials = {}) {
     upsertEnvLine(lines, `${prefix}_PASSWORD`, credentials.password);
   }
 
-  fs.writeFileSync(config.envPath, `${lines.filter((line, index) => line.trim() || index < lines.length - 1).join("\n")}\n`, {
-    mode: 0o600,
-  });
+  writeEnvAtomically(`${lines.filter((line, index) => line.trim() || index < lines.length - 1).join("\n")}\n`);
 }
 
 export function deleteAccountCredentials(account) {
@@ -107,9 +119,7 @@ export function deleteAccountCredentials(account) {
 
   accounts.delete(account.credentialKey);
   upsertEnvLine(nextLines, "XHS_ACCOUNTS", Array.from(accounts).join(","));
-  fs.writeFileSync(config.envPath, `${nextLines.filter((line, index) => line.trim() || index < nextLines.length - 1).join("\n")}\n`, {
-    mode: 0o600,
-  });
+  writeEnvAtomically(`${nextLines.filter((line, index) => line.trim() || index < nextLines.length - 1).join("\n")}\n`);
 }
 
 export function getAccountCredentials(account) {

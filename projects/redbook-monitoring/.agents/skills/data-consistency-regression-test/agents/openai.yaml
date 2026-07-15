@@ -1,0 +1,4 @@
+interface:
+  display_name: "数据一致性与回归验证"
+  short_description: "修改后按证据验证数据传播、契约兼容、回归结果与发布风险"
+  default_prompt: "使用 $data-consistency-regression-test 验证这次修改并生成可审计的回归结论。"

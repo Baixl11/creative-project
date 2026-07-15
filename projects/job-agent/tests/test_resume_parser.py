@@ -42,6 +42,33 @@ class ResumeParserTests(unittest.TestCase):
             ["产品全流程能力：熟悉从市场调研、需求分析、产品规划到上线迭代的完整流程。"],
         )
 
+    def test_parser_does_not_restore_contact_details_in_fallback(self) -> None:
+        parser = ResumeParser()
+
+        highlights = parser.parse("电话：13800000000\n邮箱：demo@example.com")
+
+        self.assertEqual(highlights, [])
+
+    def test_parser_splits_english_action_bullets(self) -> None:
+        parser = ResumeParser()
+
+        highlights = parser.parse(
+            """
+Alex Chen
+Product Manager
+- Led roadmap planning for an AI product.
+- Built weekly KPI dashboards for retention analysis.
+"""
+        )
+
+        self.assertEqual(
+            highlights,
+            [
+                "Led roadmap planning for an AI product.",
+                "Built weekly KPI dashboards for retention analysis.",
+            ],
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -45,7 +45,7 @@ python -m unittest discover -s tests
 预期结果：
 
 ```text
-Ran 41 tests ... OK
+Ran 61 tests ... OK
 ```
 
 ## 演示 1：运行内置样例
@@ -68,24 +68,24 @@ cat outputs/report.md
 这是项目的基础样例。Agent 会读取 JD 和简历，提取岗位要求和简历亮点，再生成匹配分、证据句、简历 bullet 改写建议和面试问题。
 ```
 
-## 演示 2：运行真实数据
+## 演示 2：运行中文数据
 
-用真实 JD 和简历 PDF 展示项目可以处理更接近真实用户的输入。
-
-```bash
-python -m app.main --jd data/my_jd.txt --resume data/my_resume.pdf --output outputs/my_report.md --json-output outputs/my_report.json
-```
-
-如果是在 GitHub 克隆后的公开环境，没有本地私有 `data/my_*` 文件，可以改用公开中文 demo：
+公开演示优先使用仓库自带的中文 JD 和简历，确保克隆后可复现。
 
 ```bash
 python -m app.main --jd data/demo_jd_cn.txt --resume data/demo_resume_cn.txt --output outputs/demo_cn_report.md --json-output outputs/demo_cn_report.json
 ```
 
+如果本地另有未提交的私有 `data/my_*` 文件，也可以运行 PDF 简历路径：
+
+```bash
+python -m app.main --jd data/my_jd.txt --resume data/my_resume.pdf --output outputs/my_report.md --json-output outputs/my_report.json
+```
+
 查看中文报告：
 
 ```bash
-cat outputs/my_report.md
+cat outputs/demo_cn_report.md
 ```
 
 重点展示这几部分：
@@ -101,7 +101,7 @@ cat outputs/my_report.md
 可以讲：
 
 ```text
-这里用的是中文 JD 和 PDF 简历。项目最开始对中文匹配不准，真实分数只有 18/100。后来我补了中文能力词组、中文 JD 解析、PDF 断行合并和联系方式过滤，现在这组真实数据可以得到 95/100，并且每条岗位要求都能看到对应证据句。
+这里用的是可公开复现的中文 JD 和简历。项目最开始对中文匹配不准，样例分数只有 18/100。后来补了中文能力词组、中文 JD 解析、断行合并和联系方式过滤；当前公开样例为 94/100，每条岗位要求都能看到对应证据句。
 ```
 
 如果要演示 JD 截图输入，先确认中文 OCR 语言包：
@@ -165,9 +165,9 @@ cat outputs/evaluations/summary.md
 预期结果：
 
 ```text
-high_match: 82, PASS
-medium_match: 55, PASS
-low_match: 9, PASS
+high_match: 88, PASS
+medium_match: 60, PASS
+low_match: 16, PASS
 ```
 
 可以讲：
